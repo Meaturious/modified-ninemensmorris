@@ -18,11 +18,11 @@ jobs:
     steps:
       # Step 1: Checks out your repository's code onto the runner
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       # Step 2: Sets up Node.js so we can use npm commands
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '18' # Use a stable Long-Term Support version of Node.js
           cache: 'npm'      # This speeds up the 'npm install' step on future runs
@@ -39,7 +39,7 @@ jobs:
       # Step 5: Uploads the final .dmg file from the 'dist' folder
       # so you can download it from the GitHub Actions page.
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: nine-mens-morris-mac-build
           path: dist/*.dmg
