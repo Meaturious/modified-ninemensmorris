@@ -1,0 +1,32 @@
+{
+  "name": "nine-mens-morris",
+  "version": "1.0.0",
+  "description": "A desktop version of the Nine Men's Morris game.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder"
+  },
+  "author": "Meaturious",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "electron": "^25.0.0",
+    "electron-builder": "^24.6.4"
+  },
+  "build": {
+    "appId": "com.meaturious.ninemensmorris",
+    "productName": "Nine Men's Morris",
+    "files": [
+      "main.js",
+      "index.html",
+      "script.js",
+      "style.css",
+      "preload.js"
+    ],
+    "mac": {
+      "target": "dmg",
+      "icon": "build/icon.icns"
+    }
+  }
+}

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nine Men's Morris vs AI</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body data-current-player="1" data-ai-mode="false">
+    <div class="game-container">
+        <!-- Game title -->
+        <h1 class="game-title">Nine Men's Morris</h1>
+
+        <!-- Game controls container - New Game button and mode selector side by side -->
+        <div class="game-controls">
+            <!-- New Game button -->
+            <button class="reset-button" onclick="resetGame()" aria-label="Start new game">New Game</button>
+
+            <!-- Game mode selector - compact slider -->
+            <div class="game-mode-selector">
+                <div class="mode-slider-container">
+                    <button class="mode-button" onclick="setGameMode('human')">vs Human</button>
+                    <button class="mode-button" onclick="setGameMode('ai-easy')">Easy AI</button>
+                    <button class="mode-button active" onclick="setGameMode('ai-medium')">Medium AI</button>
+                    <button class="mode-button" onclick="setGameMode('ai-hard')">Hard AI</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI thinking indicator -->
+        <div id="ai-thinking" class="ai-thinking">
+            AI is thinking<span class="thinking-dots">...</span>
+        </div>
+
+        <!-- Game info bar showing player status and turn indicator -->
+        <div class="game-info">
+            <!-- Red player info pill -->
+            <div class="player-info">
+                <div class="player-indicator player1">H</div>
+                <span id="player1-pieces">9 pieces</span>
+            </div>
+            
+            <!-- Current turn/victory message display -->
+            <div id="current-turn" class="current-turn player1-turn">
+                Your Turn
+            </div>
+            
+            <!-- Blue player info pill -->
+            <div class="player-info">
+                <div class="player-indicator player2">AI</div>
+                <span id="player2-pieces">9 pieces</span>
+            </div>
+        </div>
+
+        <!-- Game board with SVG graphics -->
+        <div class="game-board">
+            <svg class="board-svg" viewBox="0 0 400 400" role="img" aria-label="Nine Men's Morris Game Board">
+                <!-- Board structure: three concentric squares -->
+                <!-- Outer square -->
+                <rect x="20" y="20" width="360" height="360" class="board-line"/>
+                <!-- Middle square -->
+                <rect x="80" y="80" width="240" height="240" class="board-line"/>
+                <!-- Inner square -->
+                <rect x="140" y="140" width="120" height="120" class="board-line"/>
+                
+                <!-- Connecting lines between squares -->
+                <line x1="200" y1="20" x2="200" y2="140" class="board-line"/>
+                <line x1="200" y1="260" x2="200" y2="380" class="board-line"/>
+                <line x1="20" y1="200" x2="140" y2="200" class="board-line"/>
+                <line x1="260" y1="200" x2="380" y2="200" class="board-line"/>
+
+                <!-- All 24 playing positions as clickable circles -->
+                <!-- Outer square positions (8 positions: 0-7) -->
+                <circle cx="20" cy="20" r="12" class="board-position" data-position="0"/>
+                <circle cx="200" cy="20" r="12" class="board-position" data-position="1"/>
+                <circle cx="380" cy="20" r="12" class="board-position" data-position="2"/>
+                <circle cx="380" cy="200" r="12" class="board-position" data-position="3"/>
+                <circle cx="380" cy="380" r="12" class="board-position" data-position="4"/>
+                <circle cx="200" cy="380" r="12" class="board-position" data-position="5"/>
+                <circle cx="20" cy="380" r="12" class="board-position" data-position="6"/>
+                <circle cx="20" cy="200" r="12" class="board-position" data-position="7"/>
+
+                <!-- Middle square positions (8 positions: 8-15) -->
+                <circle cx="80" cy="80" r="12" class="board-position" data-position="8"/>
+                <circle cx="200" cy="80" r="12" class="board-position" data-position="9"/>
+                <circle cx="320" cy="80" r="12" class="board-position" data-position="10"/>
+                <circle cx="320" cy="200" r="12" class="board-position" data-position="11"/>
+                <circle cx="320" cy="320" r="12" class="board-position" data-position="12"/>
+                <circle cx="200" cy="320" r="12" class="board-position" data-position="13"/>
+                <circle cx="80" cy="320" r="12" class="board-position" data-position="14"/>
+                <circle cx="80" cy="200" r="12" class="board-position" data-position="15"/>
+
+                <!-- Inner square positions (8 positions: 16-23) -->
+                <circle cx="140" cy="140" r="12" class="board-position" data-position="16"/>
+                <circle cx="200" cy="140" r="12" class="board-position" data-position="17"/>
+                <circle cx="260" cy="140" r="12" class="board-position" data-position="18"/>
+                <circle cx="260" cy="200" r="12" class="board-position" data-position="19"/>
+                <circle cx="260" cy="260" r="12" class="board-position" data-position="20"/>
+                <circle cx="200" cy="260" r="12" class="board-position" data-position="21"/>
+                <circle cx="140" cy="260" r="12" class="board-position" data-position="22"/>
+                <circle cx="140" cy="200" r="12" class="board-position" data-position="23"/>
+            </svg>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,45 @@
+# .github/workflows/build.yml
+
+name: Build macOS App
+
+# This tells GitHub to run the workflow automatically
+# every time you push code to your "main" branch.
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    # This job will run on a virtual machine running the latest macOS.
+    # This is required to build a .dmg file.
+    runs-on: macos-latest
+
+    steps:
+      # Step 1: Checks out your repository's code onto the runner
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Step 2: Sets up Node.js so we can use npm commands
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18' # Use a stable Long-Term Support version of Node.js
+          cache: 'npm'      # This speeds up the 'npm install' step on future runs
+
+      # Step 3: Installs the dependencies from your package.json file
+      - name: Install dependencies
+        run: npm install
+
+      # Step 4: Runs the "build" script from your package.json
+      # This is where electron-builder creates the .dmg file in a 'dist' folder.
+      - name: Build application
+        run: npm run build
+
+      # Step 5: Uploads the final .dmg file from the 'dist' folder
+      # so you can download it from the GitHub Actions page.
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: nine-mens-morris-mac-build
+          path: dist/*.dmg
