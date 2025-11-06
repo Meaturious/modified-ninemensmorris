@@ -1,11 +1,11 @@
 {
   "name": "@meaturious/modified-ninemensmorris",
-  "version": "2.2.1",
+  "version": "2.2.4", 
   "description": "A desktop version of the Nine Men's Morris game.",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder --publish never"
+    "build": "electron-builder"
   },
   "repository": {
     "type": "git",
