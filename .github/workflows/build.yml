@@ -8,7 +8,6 @@ on:
       - 'v*'
 
 jobs:
-  # Job 1: Build the application for each platform
   build:
     strategy:
       matrix:
@@ -28,12 +27,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # This command ONLY builds. The "--publish never" flag is critical.
-      # It prevents this job from trying to create a release, solving the 403 error.
+      # --- THE FIX IS HERE ---
       - name: Build application
         run: npm run build -- --publish never
+        # FIX: Add the GITHUB_TOKEN environment variable back.
+        # electron-builder requires this token to correctly generate the 'latest.yml'
+        # files, even when not publishing.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # Upload only the final installer and update files as a temporary artifact.
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -43,25 +45,21 @@ jobs:
             dist/* Setup *.exe
             dist/*.yml
 
-  # Job 2: Create the GitHub Release after all builds are done
   release:
     runs-on: ubuntu-latest
-    needs: build # This ensures this job waits for both macOS and Windows builds to complete.
-
+    needs: build
     permissions:
-      contents: write # This job is granted permission to create a release.
+      contents: write
 
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
-          path: artifacts/ # Downloads everything into an 'artifacts' directory
+          path: artifacts/
 
-      # This action creates the final release and uploads the files from the artifacts.
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           name: Release ${{ github.ref_name }}
-          # This pattern finds all the downloaded files and uploads them.
           files: |
             artifacts/**/*
