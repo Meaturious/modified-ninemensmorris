@@ -354,24 +354,27 @@ document.addEventListener('DOMContentLoaded', () => { game = new NineMensMorrisG
 function resetGame() { if (game) game.reset(); }
 function setGameMode(mode) { if (game) game.setGameMode(mode); }
 
-const notification = document.getElementById('notification');
-const message = document.getElementById('notification-message');
-const restartButton = document.getElementById('restart-button');
+// --- NEW: MANUAL UPDATE NOTIFICATION LOGIC ---
 
-// Listen for the 'update_available' message from the main process
-window.ipcRenderer.on('update_available', () => {
-  notification.classList.remove('hidden');
-  message.innerText = 'A new update is available. Downloading now...';
+// Get references to the new UI elements
+const updateNotification = document.getElementById('update-notification');
+const updateMessage = document.getElementById('update-message');
+const downloadButton = document.getElementById('download-button');
+const closeButton = document.getElementById('close-button');
+
+// Listen for the 'update-info-available' message from the main process
+window.ipcRenderer.on('update-info-available', (info) => {
+  // Update the message and show the notification
+  updateMessage.innerText = `Version ${info.version} is available!`;
+  updateNotification.classList.remove('hidden');
 });
 
-// Listen for the 'update_downloaded' message from the main process
-window.ipcRenderer.on('update_downloaded', () => {
-  notification.classList.remove('hidden');
-  message.innerText = 'Update Downloaded. It will be installed on restart.';
-  restartButton.classList.remove('hidden');
+// When the download button is clicked, tell the main process to open the URL
+downloadButton.addEventListener('click', () => {
+  window.ipcRenderer.send('open-download-page');
 });
 
-// When the restart button is clicked, send a message to the main process
-restartButton.addEventListener('click', () => {
-  window.ipcRenderer.send('restart_app');
+// Allow the user to close the notification
+closeButton.addEventListener('click', () => {
+  updateNotification.classList.add('hidden');
 });

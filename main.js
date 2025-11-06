@@ -1,16 +1,14 @@
 // main.js
 
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, shell } = require('electron');
 const path = require('path');
 const { autoUpdater } = require('electron-updater');
-const log = require('electron-log'); // Import electron-log
+const log = require('electron-log');
 
-// --- AUTO-UPDATE LOGGING SETUP ---
-// This configures electron-log to catch errors and log update progress.
+// --- LOGGING SETUP ---
 autoUpdater.logger = log;
 autoUpdater.logger.transports.file.level = 'info';
 log.info('App starting...');
-// --- END LOGGING SETUP ---
 
 let mainWindow;
 
@@ -18,8 +16,6 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
-    // Use the 'hidden' title bar style ONLY on macOS.
-    // On Windows and Linux, the default frame will be used, which includes the controls.
     titleBarStyle: process.platform === 'darwin' ? 'hidden' : 'default',
     backgroundColor: '#2e3440',
     webPreferences: {
@@ -31,9 +27,11 @@ function createWindow() {
 
   mainWindow.loadFile('index.html');
 
+  // After the window is ready, check for updates
   mainWindow.once('ready-to-show', () => {
-    log.info('Main window is ready. Checking for updates.');
-    autoUpdater.checkForUpdatesAndNotify();
+    // We DON'T use checkForUpdatesAndNotify().
+    // We will check and handle the notification UI ourselves.
+    autoUpdater.checkForUpdates();
   });
 }
 
@@ -47,31 +45,23 @@ app.on('window-all-closed', function () {
   if (process.platform !== 'darwin') app.quit();
 });
 
-// --- AUTO-UPDATE EVENT LISTENERS ---
 
+// --- UPDATE EVENT LISTENERS ---
+
+// When an update is available, send the version info to the renderer process
 autoUpdater.on('update-available', (info) => {
   log.info('Update available.', info);
-  mainWindow.webContents.send('update_available');
-});
-
-autoUpdater.on('update-not-available', (info) => {
-  log.info('Update not available.', info);
-});
-
-autoUpdater.on('download-progress', (progressObj) => {
-  let log_message = `Download speed: ${progressObj.bytesPerSecond} - Downloaded ${progressObj.percent}% (${progressObj.transferred}/${progressObj.total})`;
-  log.info(log_message);
-});
-
-autoUpdater.on('update-downloaded', (info) => {
-  log.info('Update downloaded.', info);
-  mainWindow.webContents.send('update_downloaded');
+  // Send version info to the renderer process
+  mainWindow.webContents.send('update-info-available', info);
 });
 
 autoUpdater.on('error', (err) => {
   log.error('Error in auto-updater. ' + err.toString());
 });
 
-ipcMain.on('restart_app', () => {
-  autoUpdater.quitAndInstall();
+// New: Listen for a message from the renderer to open the download link
+ipcMain.on('open-download-page', () => {
+  // Use the repository URL from your package.json to build the releases URL
+  const releasesUrl = `https://github.com/Meaturious/modified-ninemensmorris/releases/latest`;
+  shell.openExternal(releasesUrl);
 });

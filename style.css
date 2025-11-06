@@ -247,40 +247,63 @@ body {
     }
 }
 
-/* --- UPDATE NOTIFICATION STYLES --- */
-#notification {
+/* --- NEW: UPDATE NOTIFICATION STYLES --- */
+#update-notification {
   position: fixed;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: var(--accent-color);
+  top: 50px; /* Below the draggable title bar */
+  right: 20px;
+  background-color: var(--panel-color);
   color: white;
-  padding: 10px 20px;
-  border-radius: 10px;
+  padding: 15px 20px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 15px;
   z-index: 10000;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-  opacity: 1;
-  transition: opacity 0.3s ease, transform 0.3s ease;
-}
-
-#notification.hidden {
+  border: 1px solid var(--border-color);
+  box-shadow: 0 5px 20px rgba(0,0,0,0.4);
   opacity: 0;
+  transform: translateY(-20px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
   pointer-events: none;
-  transform: translateX(-50%) translateY(20px);
 }
 
-#restart-button {
-  background-color: #fff;
-  color: var(--accent-color);
+#update-notification:not(.hidden) {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+#update-message {
+  margin: 0;
+  font-weight: 500;
+}
+
+#download-button {
+  background-color: var(--accent-color);
+  color: white;
   border: none;
-  padding: 8px 12px;
-  border-radius: 7px;
+  padding: 8px 15px;
+  border-radius: 8px;
   cursor: pointer;
   font-weight: 600;
+  transition: background-color 0.2s;
 }
-#restart-button.hidden {
-  display: none;
+
+#download-button:hover {
+  background-color: #8e44ad;
+}
+
+#close-button {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.2rem;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 0 5px;
+}
+
+#close-button:hover {
+    color: white;
 }
