@@ -1,11 +1,12 @@
 {
   "name": "@meaturious/modified-ninemensmorris",
-  "version": "2.5.0",
+  "version": "2.5.1",
   "description": "A desktop version of the Nine Men's Morris game.",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder"
+    "build": "electron-builder",
+    "build:local": "electron-builder --publish never"
   },
   "repository": {
     "type": "git",
@@ -13,12 +14,14 @@
   },
   "author": "Meaturious",
   "license": "ISC",
-  "devDependencies": {
-    "electron": "^25.0.0",
-    "electron-builder": "^24.6.4",
+  "dependencies": {
     "electron-log": "^5.0.0",
     "electron-updater": "^6.1.1"
-},
+  },
+  "devDependencies": {
+    "electron": "^25.0.0",
+    "electron-builder": "^24.6.4"
+  },
   "build": {
     "appId": "com.meaturious.ninemensmorris",
     "productName": "Nine Men's Morris",
