@@ -4,8 +4,8 @@ const path = require('path');
 
 function createWindow() {
   const mainWindow = new BrowserWindow({
-    width: 900,
-    height: 750,
+    width: 1200,
+    height: 800,
     // --- PERFORMANCE FIX: Transparent windows are extremely resource-intensive. ---
     // This is the primary cause of high GPU usage. It has been disabled.
     titleBarStyle: 'hidden',
