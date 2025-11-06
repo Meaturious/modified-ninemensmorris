@@ -9,8 +9,8 @@ function createWindow() {
     width: 900,
     height: 750,
     // --- START: Added for macOS transparent title bar ---
-    titleBarStyle: 'hiddenInset',
-    transparent: true,
+    titleBarStyle: 'hidden', // Use 'hidden' for a clean look without transparency
+    backgroundColor: '#2e3440', // Set a background color
     // --- END: Added for macOS transparent title bar ---
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),

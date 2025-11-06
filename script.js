@@ -145,14 +145,12 @@ class AIPlayer {
                     const emptyCount = otherPositions.filter(p => game.board[p] === null).length;
                     const opponentCount = otherPositions.filter(p => game.board[p] !== null && game.board[p] !== player).length;
                     
-                    // This could lead to a mill if we have 1 piece and 1 empty, or 0 pieces and 2 empty
                     if (opponentCount === 0 && ((playerCount === 1 && emptyCount === 1) || (playerCount === 0 && emptyCount === 2))) {
                         millCount++;
                     }
                 }
             }
             
-            // If this position can set up multiple mills, it's a double mill opportunity
             if (millCount >= 2) {
                 return pos;
             }
@@ -189,15 +187,11 @@ class AIPlayer {
      */
     evaluatePosition(game, position, player) {
         let score = 0;
-
-        // Count potential mills this position is part of
         let potentialMills = 0;
         for (let pattern of game.millPatterns) {
             if (pattern.includes(position)) {
                 const otherPositions = pattern.filter(p => p !== position);
                 const opponentCount = otherPositions.filter(p => game.board[p] !== null && game.board[p] !== player).length;
-                
-                // Only count mills that aren't blocked by opponent
                 if (opponentCount === 0) {
                     potentialMills++;
                 }
@@ -205,13 +199,11 @@ class AIPlayer {
         }
         score += potentialMills * 10;
 
-        // Prefer center positions for strategic advantage
         const centerPositions = [9, 11, 13, 15, 17, 19, 21, 23];
         if (centerPositions.includes(position)) {
             score += 5;
         }
 
-        // Prefer corner positions for defensive play
         const cornerPositions = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22];
         if (cornerPositions.includes(position)) {
             score += 3;
@@ -221,28 +213,30 @@ class AIPlayer {
     }
 }
 
-/**
- * Nine Men's Morris Game Class with AI Support
- */
+
 class NineMensMorrisGame {
     constructor() {
-        // Game state variables
         this.board = Array(24).fill(null);
-        this.currentPlayer = 1; // 1 = human, 2 = AI
+        this.currentPlayer = 1;
         this.piecesLeft = { 1: 9, 2: 9 };
         this.gameOver = false;
         this.winningPositions = [];
-        this.gameMode = 'human'; // 'human', 'ai-easy', 'ai-medium', 'ai-hard'
+        this.gameMode = 'human';
         this.ai = null;
         this.isAIThinking = false;
         
-        // All possible mill patterns
         this.millPatterns = [
             [0, 1, 2], [2, 3, 4], [4, 5, 6], [6, 7, 0],
             [8, 9, 10], [10, 11, 12], [12, 13, 14], [14, 15, 8],
             [16, 17, 18], [18, 19, 20], [20, 21, 22], [22, 23, 16],
             [1, 9, 17], [3, 11, 19], [5, 13, 21], [7, 15, 23]
         ];
+
+        // --- FIX: For RAM and performance, create confetti elements once and reuse them ---
+        this.confettiPool = [];
+        this.confettiContainer = document.getElementById('confetti-container');
+        this.prepareConfetti();
+        // --- END FIX ---
         
         this.initializeGame();
     }
@@ -252,8 +246,24 @@ class NineMensMorrisGame {
         positions.forEach(position => {
             position.addEventListener('click', (e) => this.handlePositionClick(e));
         });
-        this.updateDisplay();
+        // Set default mode on init
+        this.setGameMode('ai-medium');
     }
+    
+    // --- FIX: Creates a pool of confetti elements on startup to be reused later ---
+    prepareConfetti() {
+        const confettiCount = 50;
+        const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', '#f0932b', '#eb4d4b', '#6c5ce7', '#a29bfe'];
+
+        for (let i = 0; i < confettiCount; i++) {
+            const confetti = document.createElement('div');
+            confetti.className = 'confetti';
+            confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+            this.confettiContainer.appendChild(confetti);
+            this.confettiPool.push(confetti);
+        }
+    }
+    // --- END FIX ---
 
     setGameMode(mode) {
         this.gameMode = mode;
@@ -283,8 +293,9 @@ class NineMensMorrisGame {
             'ai-hard': 3
         };
         
-        if (buttons[modeMap[this.gameMode]]) {
-            buttons[modeMap[this.gameMode]].classList.add('active');
+        const activeBtn = document.querySelector(`.mode-button[onclick="setGameMode('${this.gameMode}')"]`);
+        if (activeBtn) {
+            activeBtn.classList.add('active');
         }
     }
 
@@ -303,8 +314,6 @@ class NineMensMorrisGame {
 
     async handlePositionClick(event) {
         if (this.gameOver || this.isAIThinking) return;
-        
-        // In AI mode, only allow human moves on player 1's turn
         if (this.gameMode !== 'human' && this.currentPlayer === 2) return;
         
         const position = parseInt(event.target.dataset.position);
@@ -314,29 +323,24 @@ class NineMensMorrisGame {
     }
 
     async makeMove(position) {
-        // Place piece
         this.board[position] = this.currentPlayer;
         this.piecesLeft[this.currentPlayer]--;
         this.renderBoard();
         
-        // Check for mill
         if (this.checkForMill(position, this.currentPlayer)) {
             const playerName = this.getPlayerName(this.currentPlayer);
             this.endGame(`${playerName} Wins!`);
             return;
         }
         
-        // Check for draw
         if (this.piecesLeft[1] === 0 && this.piecesLeft[2] === 0) {
             this.endGame("It's a Draw!");
             return;
         }
         
-        // Switch players
         this.currentPlayer = this.currentPlayer === 1 ? 2 : 1;
         this.updateDisplay();
         
-        // If it's AI's turn, make AI move
         if (this.gameMode !== 'human' && this.currentPlayer === 2 && !this.gameOver) {
             await this.makeAIMove();
         }
@@ -348,7 +352,6 @@ class NineMensMorrisGame {
         this.isAIThinking = true;
         this.showAIThinking(true);
         
-        // Add delay for better UX
         await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 1200));
         
         const aiMove = this.ai.makeMove(this);
@@ -373,7 +376,7 @@ class NineMensMorrisGame {
         if (this.gameMode === 'human') {
             return player === 1 ? 'Red' : 'Blue';
         } else {
-            return player === 1 ? 'Human' : 'AI';
+            return player === 1 ? 'You' : 'AI';
         }
     }
 
@@ -414,6 +417,8 @@ class NineMensMorrisGame {
         const turnElement = document.getElementById('current-turn');
         const gameInfoElement = document.querySelector('.game-info');
         
+        if (this.gameOver) return;
+
         if (this.currentPlayer === 1) {
             const turnText = this.gameMode === 'human' ? "Red's Turn" : "Your Turn";
             turnElement.textContent = turnText;
@@ -434,8 +439,7 @@ class NineMensMorrisGame {
         turnElement.textContent = message;
         gameInfoElement.className = 'game-info game-over';
         
-        const playerInfos = document.querySelectorAll('.player-info');
-        playerInfos.forEach(info => info.classList.add('hidden'));
+        document.querySelectorAll('.player-info').forEach(info => info.classList.add('hidden'));
         
         this.renderBoard();
         
@@ -445,30 +449,24 @@ class NineMensMorrisGame {
         
         this.showAIThinking(false);
     }
-
+    
+    // --- FIX: This function now reuses the confetti from the pool instead of creating new ones. ---
     launchConfetti() {
-        const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', '#f0932b', '#eb4d4b', '#6c5ce7', '#a29bfe'];
-        const confettiCount = 50;
-        
-        for (let i = 0; i < confettiCount; i++) {
+        this.confettiPool.forEach(confetti => {
+            // Remove the animation class to reset it
+            confetti.classList.remove('animate');
+            
+            // Randomize position and animation delay
+            confetti.style.left = Math.random() * 100 + 'vw';
+            confetti.style.animationDelay = Math.random() * 0.3 + 's';
+
+            // Use a tiny timeout to force the browser to re-apply the animation
             setTimeout(() => {
-                const confetti = document.createElement('div');
-                confetti.className = 'confetti';
-                confetti.style.left = Math.random() * 100 + 'vw';
-                confetti.style.top = '-20px';
-                confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
-                confetti.style.animationDelay = Math.random() * 0.3 + 's';
-                confetti.style.animationDuration = (Math.random() * 3 + 2) + 's';
-                document.body.appendChild(confetti);
-                
-                setTimeout(() => {
-                    if (confetti.parentNode) {
-                        confetti.parentNode.removeChild(confetti);
-                    }
-                }, 5000);
-            }, Math.random() * 500);
-        }
+                confetti.classList.add('animate');
+            }, 10);
+        });
     }
+    // --- END FIX ---
 
     reset() {
         this.board = Array(24).fill(null);
@@ -478,11 +476,8 @@ class NineMensMorrisGame {
         this.winningPositions = [];
         this.isAIThinking = false;
         
-        const gameInfoElement = document.querySelector('.game-info');
-        gameInfoElement.className = 'game-info player1-turn';
-        
-        const playerInfos = document.querySelectorAll('.player-info');
-        playerInfos.forEach(info => info.classList.remove('hidden'));
+        document.querySelector('.game-info').className = 'game-info player1-turn';
+        document.querySelectorAll('.player-info').forEach(info => info.classList.remove('hidden'));
         
         this.showAIThinking(false);
         this.renderBoard();
@@ -490,23 +485,16 @@ class NineMensMorrisGame {
     }
 }
 
-// Global game instance
 let game;
 
-// Initialize game when page loads
 document.addEventListener('DOMContentLoaded', function() {
     game = new NineMensMorrisGame();
 });
 
-// Global functions for UI interaction
 function resetGame() {
-    if (game) {
-        game.reset();
-    }
+    if (game) game.reset();
 }
 
 function setGameMode(mode) {
-    if (game) {
-        game.setGameMode(mode);
-    }
+    if (game) game.setGameMode(mode);
 }
