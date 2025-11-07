@@ -2,8 +2,6 @@
 const AIPlayer = window.AIPlayer;
 
 class NineMensMorrisGame {
-    // ... (The entire NineMensMorrisGame class remains unchanged) ...
-    // ... (constructor, setupDOMListeners, makeMove, etc. are all correct) ...
     constructor() {
         this.board = Array(24).fill(null);
         this.currentPlayer = 1;
@@ -11,7 +9,7 @@ class NineMensMorrisGame {
         this.gameOver = false;
         this.winningPositions = [];
         this.isAIThinking = false;
-        this.gameMode = 'ai-medium'; // A default value
+        this.gameMode = 'ai-medium';
         this.ai = null;
         
         this.millPatterns = [
@@ -20,14 +18,8 @@ class NineMensMorrisGame {
             [22, 23, 16], [1, 9, 17], [3, 11, 19], [5, 13, 21], [7, 15, 23]
         ];
         
-        this.confettiPool = [];
-        // This query will be delayed until the constructor is called from inside DOMContentLoaded
+        // OPTIMIZATION: Remove confetti pre-allocation.
         this.confettiContainer = document.getElementById('confetti-container');
-        
-        // Check if the container exists before preparing confetti
-        if (this.confettiContainer) {
-            this.prepareConfetti();
-        }
     }
 
     setupDOMListeners() {
@@ -36,17 +28,7 @@ class NineMensMorrisGame {
         });
     }
     
-    prepareConfetti() {
-        const confettiCount = 50;
-        const colors = ['#e67e22', '#3498db', '#9b59b6', '#f1c40f', '#e74c3c'];
-        for (let i = 0; i < confettiCount; i++) {
-            const confetti = document.createElement('div');
-            confetti.className = 'confetti';
-            confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
-            this.confettiContainer.appendChild(confetti);
-            this.confettiPool.push(confetti);
-        }
-    }
+    // OPTIMIZATION: The prepareConfetti method is no longer needed and has been removed.
 
     setGameMode(mode, isInitial = false) {
         this.gameMode = mode;
@@ -192,13 +174,28 @@ class NineMensMorrisGame {
         }
     }
     
+    // OPTIMIZATION: This function now creates and destroys confetti on demand.
     launchConfetti() {
-        this.confettiPool.forEach(confetti => {
-            confetti.classList.remove('animate');
+        const confettiCount = 50;
+        const colors = ['#e67e22', '#3498db', '#9b59b6', '#f1c40f', '#e74c3c'];
+        
+        for (let i = 0; i < confettiCount; i++) {
+            const confetti = document.createElement('div');
+            confetti.className = 'confetti';
+            confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
             confetti.style.left = Math.random() * 100 + 'vw';
             confetti.style.animationDelay = Math.random() * 0.3 + 's';
+            
+            // This is the key to preventing the memory leak.
+            // The element removes itself from the DOM when its animation is over.
+            confetti.addEventListener('animationend', () => {
+                confetti.remove();
+            });
+
+            this.confettiContainer.appendChild(confetti);
+            // We must add the class *after* appending to ensure the animation triggers.
             setTimeout(() => confetti.classList.add('animate'), 10);
-        });
+        }
     }
 
     reset() {
@@ -217,9 +214,7 @@ class NineMensMorrisGame {
     }
 }
 
-// *** THE FIX: ALL executable code is now inside this listener ***
 document.addEventListener('DOMContentLoaded', () => {
-    // Safety check
     if (!window.AIPlayer) {
         console.error("AIPlayer class not found. Ensure ai.js is loaded correctly before script.js.");
         document.body.innerHTML = "<div style='color: white; font-family: sans-serif; padding: 30px;'><h1>Application Error</h1><p>A critical component (AIPlayer) failed to load. The application cannot start.</p></div>";
@@ -228,7 +223,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const game = new NineMensMorrisGame();
 
-    // Setup game and control button listeners
     game.setupDOMListeners();
 
     document.getElementById('reset-button').addEventListener('click', () => {
@@ -242,17 +236,14 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Initialize the game with the default mode
     const initialMode = document.querySelector('.mode-button.active').dataset.mode;
     game.setGameMode(initialMode, true);
     
-    // --- UPDATE NOTIFICATION LOGIC (MOVED HERE) ---
     const updateNotification = document.getElementById('update-notification');
     const updateMessage = document.getElementById('update-message');
     const downloadButton = document.getElementById('download-button');
     const closeButton = document.getElementById('close-button');
 
-    // Make sure ipcRenderer is available before using it
     if (window.ipcRenderer) {
         window.ipcRenderer.on('update-info-available', (info) => {
           updateMessage.innerText = `Version ${info.version} is available!`;

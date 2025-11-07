@@ -1,13 +1,12 @@
 /**
  * AI Player with different difficulty levels
  */
-// *** CHANGE: Attach directly to window, remove module.exports ***
 window.AIPlayer = class AIPlayer {
     constructor(difficulty = 'medium') {
         this.difficulty = difficulty;
         this.player = 2; // AI is always player 2
     }
-    // ... (rest of the file is unchanged)
+
     makeMove(game) {
         switch (this.difficulty) {
             case 'easy':
@@ -72,9 +71,6 @@ window.AIPlayer = class AIPlayer {
 
     // --- HARD AI - MINIMAX ALGORITHM ---
 
-    /**
-     * Makes a move using the minimax algorithm for a much harder difficulty.
-     */
     makeHardMove(game) {
         const winningMove = this.findWinningMove(game, this.player);
         if (winningMove !== -1) {
@@ -88,24 +84,23 @@ window.AIPlayer = class AIPlayer {
         }
         
         const depth = 4; 
-        const bestMoveResult = this.findBestMoveMinimax(game, depth);
+        // We create one clone here to pass to the simulation, so the main game state is untouched.
+        const simulationGame = this.cloneGame(game);
+        const bestMoveResult = this.findBestMoveMinimax(simulationGame, depth);
 
         return bestMoveResult.move !== -1 ? bestMoveResult.move : this.makeRandomMove(game);
     }
 
-    /**
-     * Kicks off the minimax algorithm to find the best move.
-     */
     findBestMoveMinimax(game, depth) {
         let bestScore = -Infinity;
         let bestMove = -1;
         const emptyPositions = game.board.map((p, i) => (p === null ? i : null)).filter(p => p !== null);
 
         for (const move of emptyPositions) {
-            const tempGame = this.cloneGame(game);
-            tempGame.board[move] = this.player;
-
-            const score = this.minimax(tempGame, depth - 1, -Infinity, Infinity, false);
+            // OPTIMIZATION: Mutate the board, evaluate, then undo the move. No cloning in the loop.
+            game.board[move] = this.player;
+            const score = this.minimax(game, depth - 1, -Infinity, Infinity, false);
+            game.board[move] = null; // Undo the move
 
             if (score > bestScore) {
                 bestScore = score;
@@ -116,9 +111,6 @@ window.AIPlayer = class AIPlayer {
         return { move: bestMove, score: bestScore };
     }
 
-    /**
-     * The core recursive minimax function with alpha-beta pruning.
-     */
     minimax(game, depth, alpha, beta, isMaximizing) {
         const score = this.evaluateBoard(game);
         
@@ -132,11 +124,12 @@ window.AIPlayer = class AIPlayer {
         if (isMaximizing) {
             let maxEval = -Infinity;
             for (const move of emptyPositions) {
-                const tempGame = this.cloneGame(game);
-                tempGame.board[move] = this.player;
+                // OPTIMIZATION: Make move on the board directly.
+                game.board[move] = this.player;
+                const evaluationResult = this.minimax(game, depth - 1, alpha, beta, false);
+                // OPTIMIZATION: Undo the move to revert state for the next iteration.
+                game.board[move] = null;
                 
-                // *** CHANGED VARIABLE NAME HERE ***
-                const evaluationResult = this.minimax(tempGame, depth - 1, alpha, beta, false);
                 maxEval = Math.max(maxEval, evaluationResult);
                 alpha = Math.max(alpha, evaluationResult);
                 if (beta <= alpha) break;
@@ -145,11 +138,12 @@ window.AIPlayer = class AIPlayer {
         } else {
             let minEval = Infinity;
             for (const move of emptyPositions) {
-                const tempGame = this.cloneGame(game);
-                tempGame.board[move] = 1;
-                
-                // *** AND CHANGED VARIABLE NAME HERE ***
-                const evaluationResult = this.minimax(tempGame, depth - 1, alpha, beta, true);
+                // OPTIMIZATION: Make move for the opponent.
+                game.board[move] = 1;
+                const evaluationResult = this.minimax(game, depth - 1, alpha, beta, true);
+                // OPTIMIZATION: Undo the move.
+                game.board[move] = null;
+
                 minEval = Math.min(minEval, evaluationResult);
                 beta = Math.min(beta, evaluationResult);
                 if (beta <= alpha) break;
@@ -158,9 +152,6 @@ window.AIPlayer = class AIPlayer {
         }
     }
     
-    /**
-     * Scores a given board state. A higher score is better for the AI.
-     */
     evaluateBoard(game) {
         let score = 0;
         const opponent = 1;
@@ -179,9 +170,6 @@ window.AIPlayer = class AIPlayer {
         return score;
     }
 
-    /**
-     * Helper to count how many "two-in-a-row" threats a player has.
-     */
     countThreats(game, player) {
         let threats = 0;
         for (const pattern of game.millPatterns) {
@@ -193,9 +181,6 @@ window.AIPlayer = class AIPlayer {
         return threats;
     }
     
-    /**
-     * Helper to calculate a score based on control of potential mill lines.
-     */
     positionalScore(game, player) {
         let score = 0;
         const opponent = player === 1 ? 2 : 1;
@@ -207,9 +192,6 @@ window.AIPlayer = class AIPlayer {
         return score;
     }
 
-    /**
-     * Helper to create a deep copy of the game state for simulations.
-     */
     cloneGame(game) {
         return {
             board: [...game.board],
