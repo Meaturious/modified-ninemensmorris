@@ -1,108 +1,97 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-180x180.png">
-    <link rel="apple-touch-icon" sizes="152x152" href="/apple-touch-icon-152x152.png">
-    <link rel="apple-touch-icon" sizes="120x120" href="/apple-touch-icon-120x120.png">
     <meta charset="UTF-8">
-    <!-- *** ADD THIS LINE *** -->
-    <meta http-equiv="Content-Security-Policy" content="script-src 'self' app:">
-
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Nine Men's Morris</title>
-    <!-- New: Added Google Fonts for a modern look -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- === FAVICON AND IOS ICONS === -->
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    
+    <!-- === iOS WEB APP TAGS === -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <div id="update-notification" class="hidden">
-        <p id="update-message"></p>
-        <button id="download-button">Download</button>
-        <button id="close-button">✕</button>
-    </div>
-    <header class="title-bar"></header>
 
-    <div class="main-layout">
-        
-        <div class="game-panel">
+    <div id="game-container" class="mobile-layout">
+        <!-- AI Player Panel -->
+        <div id="player2-panel" class="player-panel top-player">
+            <div class="player-avatar ai-avatar">AI</div>
+            <div class="player-info">
+                <div id="player2-name" class="player-name">Hard AI</div>
+                <div id="player2-pieces" class="pieces-count">9 pieces remaining</div>
+            </div>
+            <div class="ai-thinking">Thinking...</div>
+        </div>
+
+        <!-- Game Board -->
+        <div class="game-board-container">
             <div class="game-board">
-                <svg class="board-svg" viewBox="0 0 400 400">
-                    <!-- Board lines -->
-                    <rect x="20" y="20" width="360" height="360" class="board-line"/>
-                    <rect x="80" y="80" width="240" height="240" class="board-line"/>
-                    <rect x="140" y="140" width="120" height="120" class="board-line"/>
-                    <line x1="200" y1="20" x2="200" y2="140" class="board-line"/>
-                    <line x1="200" y1="260" x2="200" y2="380" class="board-line"/>
-                    <line x1="20" y1="200" x2="140" y2="200" class="board-line"/>
-                    <line x1="260" y1="200" x2="380" y2="200" class="board-line"/>
-
-                    <!-- Clickable positions -->
+                <svg id="game-board-svg" class="board-svg" viewBox="0 0 400 400">
+                    <g class="board-lines">
+                        <rect x="20" y="20" width="360" height="360"/><rect x="80" y="80" width="240" height="240"/><rect x="140" y="140" width="120" height="120"/><line x1="200" y1="20" x2="200" y2="140"/><line x1="200" y1="260" x2="200" y2="380"/><line x1="20" y1="200" x2="140" y2="200"/><line x1="260" y1="200" x2="380" y2="200"/>
+                    </g>
                     <g class="board-positions">
-                        <circle cx="20" cy="20" r="12" class="board-position" data-position="0"/>
-                        <circle cx="200" cy="20" r="12" class="board-position" data-position="1"/>
-                        <circle cx="380" cy="20" r="12" class="board-position" data-position="2"/>
-                        <circle cx="380" cy="200" r="12" class="board-position" data-position="3"/>
-                        <circle cx="380" cy="380" r="12" class="board-position" data-position="4"/>
-                        <circle cx="200" cy="380" r="12" class="board-position" data-position="5"/>
-                        <circle cx="20" cy="380" r="12" class="board-position" data-position="6"/>
-                        <circle cx="20" cy="200" r="12" class="board-position" data-position="7"/>
-                        <circle cx="80" cy="80" r="12" class="board-position" data-position="8"/>
-                        <circle cx="200" cy="80" r="12" class="board-position" data-position="9"/>
-                        <circle cx="320" cy="80" r="12" class="board-position" data-position="10"/>
-                        <circle cx="320" cy="200" r="12" class="board-position" data-position="11"/>
-                        <circle cx="320" cy="320" r="12" class="board-position" data-position="12"/>
-                        <circle cx="200" cy="320" r="12" class="board-position" data-position="13"/>
-                        <circle cx="80" cy="320" r="12" class="board-position" data-position="14"/>
-                        <circle cx="80" cy="200" r="12" class="board-position" data-position="15"/>
-                        <circle cx="140" cy="140" r="12" class="board-position" data-position="16"/>
-                        <circle cx="200" cy="140" r="12" class="board-position" data-position="17"/>
-                        <circle cx="260" cy="140" r="12" class="board-position" data-position="18"/>
-                        <circle cx="260" cy="200" r="12" class="board-position" data-position="19"/>
-                        <circle cx="260" cy="260" r="12" class="board-position" data-position="20"/>
-                        <circle cx="200" cy="260" r="12" class="board-position" data-position="21"/>
-                        <circle cx="140" cy="260" r="12" class="board-position" data-position="22"/>
-                        <circle cx="140" cy="200" r="12" class="board-position" data-position="23"/>
+                        <g class="position-group" transform="translate(20, 20)"><circle class="piece" r="16"/><circle class="hitbox" r="18" data-position="0"/></g>
+                        <g class="position-group" transform="translate(200, 20)"><circle class="piece" r="16"/><circle class="hitbox" r="18" data-position="1"/></g>
+                        <g class="position-group" transform="translate(380, 20)"><circle class="piece" r="16"/><circle class="hitbox" r="18" data-position="2"/></g>
+                        <g class="position-group" transform="translate(380, 200)"><circle class="piece" r="16"/><circle class="hitbox" r="18" data-position="3"/></g>
+                        <g class="position-group" transform="translate(380, 380)"><circle class="piece" r="16"/><circle class="hitbox" r="18" data-position="4"/></g>
+                        <g class="position-group" transform="translate(200, 380)"><circle class="piece" r="16"/><circle class="hitbox" r="18" data-position="5"/></g>
+                        <g class="position-group" transform="translate(20, 380)"><circle class="piece" r="16"/><circle class="hitbox" r="18" data-position="6"/></g>
+                        <g class="position-group" transform="translate(20, 200)"><circle class="piece" r="16"/><circle class="hitbox" r="18" data-position="7"/></g>
+                        <g class="position-group" transform="translate(80, 80)"><circle class="piece" r="16"/><circle class="hitbox" r="18" data-position="8"/></g>
+                        <g class="position-group" transform="translate(200, 80)"><circle class="piece" r="16"/><circle class="hitbox" r="18" data-position="9"/></g>
+                        <g class="position-group" transform="translate(320, 80)"><circle class="piece" r="16"/><circle class="hitbox" r="18" data-position="10"/></g>
+                        <g class="position-group" transform="translate(320, 200)"><circle class="piece" r="16"/><circle class="hitbox" r="18" data-position="11"/></g>
+                        <g class="position-group" transform="translate(320, 320)"><circle class="piece" r="16"/><circle class="hitbox" r="18" data-position="12"/></g>
+                        <g class="position-group" transform="translate(200, 320)"><circle class="piece" r="16"/><circle class="hitbox" r="18" data-position="13"/></g>
+                        <g class="position-group" transform="translate(80, 320)"><circle class="piece" r="16"/><circle class="hitbox" r="18" data-position="14"/></g>
+                        <g class="position-group" transform="translate(80, 200)"><circle class="piece" r="16"/><circle class="hitbox" r="18" data-position="15"/></g>
+                        <g class="position-group" transform="translate(140, 140)"><circle class="piece" r="16"/><circle class="hitbox" r="18" data-position="16"/></g>
+                        <g class="position-group" transform="translate(200, 140)"><circle class="piece" r="16"/><circle class="hitbox" r="18" data-position="17"/></g>
+                        <g class="position-group" transform="translate(260, 140)"><circle class="piece" r="16"/><circle class="hitbox" r="18" data-position="18"/></g>
+                        <g class="position-group" transform="translate(260, 200)"><circle class="piece" r="16"/><circle class="hitbox" r="18" data-position="19"/></g>
+                        <g class="position-group" transform="translate(260, 260)"><circle class="piece" r="16"/><circle class="hitbox" r="18" data-position="20"/></g>
+                        <g class="position-group" transform="translate(200, 260)"><circle class="piece" r="16"/><circle class="hitbox" r="18" data-position="21"/></g>
+                        <g class="position-group" transform="translate(140, 260)"><circle class="piece" r="16"/><circle class="hitbox" r="18" data-position="22"/></g>
+                        <g class="position-group" transform="translate(140, 200)"><circle class="piece" r="16"/><circle class="hitbox" r="18" data-position="23"/></g>
                     </g>
                 </svg>
             </div>
         </div>
 
-        <div class="info-panel">
-            <h1 class="game-title">Nine Men's Morris</h1>
-            
-            <div class="players-container">
-                <div id="player1-panel" class="player-panel active">
-                    <div class="player-header">
-                        <span id="player1-name" class="player-name">Human</span>
-                        <div class="turn-indicator"></div>
-                    </div>
-                    <span id="player1-pieces" class="pieces-count">9 pieces remaining</span>
-                </div>
-                <div id="player2-panel" class="player-panel">
-                    <div class="player-header">
-                        <span id="player2-name" class="player-name">AI</span>
-                        <div class="turn-indicator"></div>
-                    </div>
-                    <span id="player2-pieces" class="pieces-count">9 pieces remaining</span>
-                    <span id="ai-thinking" class="ai-thinking">Thinking...</span>
-                </div>
+        <!-- Human Player Panel -->
+        <div id="player1-panel" class="player-panel bottom-player">
+            <div class="player-avatar your-avatar">H</div>
+            <div class="player-info">
+                <div id="player1-name" class="player-name">You</div>
+                <div id="player1-pieces" class="pieces-count">9 pieces remaining</div>
             </div>
-
-            <div id="game-status" class="game-status"></div>
-            <div id="game-over-message" class="game-over-message"></div>
-
-            <div class="controls-group">
-                <button id="reset-button" class="reset-button">New Game</button>
-                <div class="game-mode-selector">
-                    <button class="mode-button" data-mode="human">vs Human</button>
-                    <button class="mode-button" data-mode="ai-easy">Easy</button>
-                    <button class="mode-button active" data-mode="ai-medium">Medium</button>
-                    <button class="mode-button" data-mode="ai-hard">Hard</button>
-                </div>
+            <div class="player-controls">
+                <button id="reset-button" class="control-button"><i class="fas fa-times"></i></button>
+                <button id="settings-button" class="control-button"><i class="fas fa-cog"></i></button>
             </div>
+        </div>
+    </div>
+    
+    <!-- SETTINGS MODAL -->
+    <div id="settings-modal" class="modal-overlay hidden">
+        <div class="settings-panel">
+            <h2>Settings</h2>
+            <p>Choose Game Mode</p>
+            <div class="settings-options">
+                <button class="mode-button" data-mode="ai-easy">Easy AI</button>
+                <button class="mode-button" data-mode="ai-medium">Medium AI</button>
+                <button class="mode-button" data-mode="ai-hard">Hard AI</button>
+                <button class="mode-button" data-mode="human">vs. Human</button>
+            </div>
+            <button id="close-settings-button" class="close-button">Close</button>
         </div>
     </div>
     

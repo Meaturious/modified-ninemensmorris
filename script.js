@@ -9,92 +9,91 @@ class NineMensMorrisGame {
         this.gameOver = false;
         this.winningPositions = [];
         this.isAIThinking = false;
-        this.gameMode = 'ai-medium';
+        this.gameMode = 'ai-hard';
         this.ai = null;
-        
-        this.millPatterns = [
-            [0, 1, 2], [2, 3, 4], [4, 5, 6], [6, 7, 0], [8, 9, 10], [10, 11, 12], 
-            [12, 13, 14], [14, 15, 8], [16, 17, 18], [18, 19, 20], [20, 21, 22], 
-            [22, 23, 16], [1, 9, 17], [3, 11, 19], [5, 13, 21], [7, 15, 23]
-        ];
-        
-        // OPTIMIZATION: Remove confetti pre-allocation.
-        this.confettiContainer = document.getElementById('confetti-container');
+        this.millPatterns = [[0,1,2],[2,3,4],[4,5,6],[6,7,0],[8,9,10],[10,11,12],[12,13,14],[14,15,8],[16,17,18],[18,19,20],[20,21,22],[22,23,16],[1,9,17],[3,11,19],[5,13,21],[7,15,23]];
+
+        this.dom = {
+            player1: { name: document.getElementById('player1-name'), pieces: document.getElementById('player1-pieces') },
+            player2: { panel: document.getElementById('player2-panel'), name: document.getElementById('player2-name'), pieces: document.getElementById('player2-pieces') },
+            resetButton: document.getElementById('reset-button'),
+            settingsButton: document.getElementById('settings-button'),
+            boardSVG: document.getElementById('game-board-svg'),
+            allPieces: document.querySelectorAll('#game-board-svg .piece'), // Get all visual piece elements
+            confettiContainer: document.getElementById('confetti-container'),
+            // Modal elements
+            settingsModal: document.getElementById('settings-modal'),
+            closeSettingsBtn: document.getElementById('close-settings-button'),
+            modeButtons: document.querySelectorAll('.mode-button')
+        };
     }
 
     setupDOMListeners() {
-        document.querySelector('.game-board').addEventListener('click', (e) => {
-            if (e.target.classList.contains('board-position')) this.handlePositionClick(e.target);
+        this.dom.boardSVG.addEventListener('click', (e) => {
+            if (e.target.classList.contains('hitbox')) {
+                this.handlePositionClick(e.target);
+            }
+        });
+        this.dom.resetButton.addEventListener('click', () => this.reset());
+        
+        // Enable settings modal listeners
+        this.dom.settingsButton.addEventListener('click', () => this.toggleSettingsModal(true));
+        this.dom.closeSettingsBtn.addEventListener('click', () => this.toggleSettingsModal(false));
+        this.dom.modeButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                this.setGameMode(e.target.dataset.mode);
+                this.toggleSettingsModal(false);
+            });
         });
     }
-    
-    // OPTIMIZATION: The prepareConfetti method is no longer needed and has been removed.
 
-    setGameMode(mode, isInitial = false) {
-        this.gameMode = mode;
-        if (mode !== 'human') {
-            const difficulty = mode.replace('ai-', '');
-            this.ai = new AIPlayer(difficulty);
-            document.body.setAttribute('data-ai-mode', 'true');
-        } else {
-            this.ai = null;
-            document.body.setAttribute('data-ai-mode', 'false');
+    toggleSettingsModal(show) {
+        this.dom.settingsModal.classList.toggle('hidden', !show);
+        if (show) {
+            this.updateModeButtons();
         }
-        
-        this.updateModeButtons();
-        if (!isInitial) this.reset();
     }
 
     updateModeButtons() {
-        document.querySelectorAll('.mode-button').forEach(btn => btn.classList.remove('active'));
-        const activeBtn = document.querySelector(`.mode-button[data-mode='${this.gameMode}']`);
-        if (activeBtn) activeBtn.classList.add('active');
+        this.dom.modeButtons.forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.mode === this.gameMode);
+        });
     }
 
-    updatePlayerLabels() {
-        const p1Name = document.getElementById('player1-name');
-        const p2Name = document.getElementById('player2-name');
-        if (this.gameMode === 'human') {
-            p1Name.textContent = 'Player 1';
-            p2Name.textContent = 'Player 2';
-        } else {
-            p1Name.textContent = 'Human';
-            p2Name.textContent = 'AI';
-        }
+    setGameMode(mode) {
+        this.gameMode = mode;
+        this.ai = mode !== 'human' ? new AIPlayer(mode.replace('ai-', '')) : null;
+        this.reset();
     }
-
+    
     handlePositionClick(target) {
         if (this.gameOver || this.isAIThinking) return;
-        if (this.gameMode !== 'human' && this.currentPlayer === 2) return;
-        
+        if (this.gameMode !== 'human' && this.currentPlayer === 2) return; // Only player 1 can click vs AI
         const position = parseInt(target.dataset.position);
         if (this.board[position] !== null) return;
-        
         this.makeMove(position);
     }
 
     async makeMove(position) {
-        if (this.gameOver) return;
-        
+        if (this.gameOver || this.board[position] !== null) return;
+
         this.board[position] = this.currentPlayer;
         this.piecesLeft[this.currentPlayer]--;
-        
-        if (this.checkForMill(position, this.currentPlayer)) {
-            this.renderBoard();
-            this.endGame(`${this.getPlayerName(this.currentPlayer)} Wins!`);
-            return;
-        }
-        
-        if (this.piecesLeft[1] === 0 && this.piecesLeft[2] === 0) {
-            this.renderBoard();
-            this.endGame("It's a Draw!");
-            return;
-        }
-        
-        this.currentPlayer = this.currentPlayer === 1 ? 2 : 1;
         this.renderBoard();
+
+        if (this.checkForMill(position, this.currentPlayer)) {
+            this.endGame(this.currentPlayer);
+            return;
+        }
+
+        if (this.piecesLeft[1] === 0 && this.piecesLeft[2] === 0) {
+            this.endGame(null); // Draw
+            return;
+        }
+
+        this.currentPlayer = this.currentPlayer === 1 ? 2 : 1;
         this.updateDisplay();
-        
+
         if (this.gameMode !== 'human' && this.currentPlayer === 2 && !this.gameOver) {
             await this.makeAIMove();
         }
@@ -102,30 +101,19 @@ class NineMensMorrisGame {
 
     async makeAIMove() {
         if (!this.ai || this.gameOver) return;
-        
         this.isAIThinking = true;
         this.showAIThinking(true);
-        
         await new Promise(resolve => setTimeout(resolve, 600 + Math.random() * 400));
         
         const aiMove = this.ai.makeMove(this);
-        
         this.isAIThinking = false;
         this.showAIThinking(false);
 
         if (aiMove !== -1 && aiMove !== undefined) {
             this.makeMove(aiMove);
         } else {
-            this.endGame("It's a Draw!");
+            this.endGame(null); // Draw if AI has no moves
         }
-    }
-
-    showAIThinking(show) {
-        document.getElementById('player2-panel').classList.toggle('thinking', show);
-    }
-
-    getPlayerName(player) {
-        return document.getElementById(`player${player}-name`).textContent;
     }
 
     checkForMill(position, player) {
@@ -139,62 +127,36 @@ class NineMensMorrisGame {
     }
 
     renderBoard() {
-        document.querySelectorAll('.board-position').forEach((pos, index) => {
-            pos.classList.remove('occupied', 'winning-position', 'player1', 'player2');
+        this.dom.allPieces.forEach((piece, index) => {
+            let classes = 'piece';
             if (this.board[index] !== null) {
-                pos.classList.add('occupied', `player${this.board[index]}`);
+                classes += ` occupied player${this.board[index]}`;
             }
             if (this.gameOver && this.winningPositions.includes(index)) {
-                pos.classList.add('winning-position');
+                classes += ' winning-position';
             }
+            piece.setAttribute('class', classes);
         });
     }
 
     updateDisplay() {
-        document.getElementById('player1-pieces').textContent = `${this.piecesLeft[1]} pieces remaining`;
-        document.getElementById('player2-pieces').textContent = `${this.piecesLeft[2]} pieces remaining`;
-        
-        const p1Panel = document.getElementById('player1-panel');
-        const p2Panel = document.getElementById('player2-panel');
-        
-        if (!this.gameOver) {
-            p1Panel.classList.toggle('active', this.currentPlayer === 1);
-            p2Panel.classList.toggle('active', this.currentPlayer === 2);
-        }
+        this.dom.player1.pieces.textContent = `${this.piecesLeft[1]} pieces remaining`;
+        this.dom.player2.pieces.textContent = `${this.piecesLeft[2]} pieces remaining`;
     }
 
-    endGame(message) {
+    showAIThinking(show) {
+        this.dom.player2.panel.classList.toggle('thinking', show);
+    }
+
+    endGame(winner) {
         this.gameOver = true;
-        document.getElementById('game-over-message').textContent = message;
-        document.getElementById('player1-panel').classList.remove('active');
-        document.getElementById('player2-panel').classList.remove('active');
-        
-        if (message.includes('Wins!')) {
+        if (winner === 1) {
+            this.dom.player1.name.textContent = 'You Win!';
             this.launchConfetti();
-        }
-    }
-    
-    // OPTIMIZATION: This function now creates and destroys confetti on demand.
-    launchConfetti() {
-        const confettiCount = 50;
-        const colors = ['#e67e22', '#3498db', '#9b59b6', '#f1c40f', '#e74c3c'];
-        
-        for (let i = 0; i < confettiCount; i++) {
-            const confetti = document.createElement('div');
-            confetti.className = 'confetti';
-            confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
-            confetti.style.left = Math.random() * 100 + 'vw';
-            confetti.style.animationDelay = Math.random() * 0.3 + 's';
-            
-            // This is the key to preventing the memory leak.
-            // The element removes itself from the DOM when its animation is over.
-            confetti.addEventListener('animationend', () => {
-                confetti.remove();
-            });
-
-            this.confettiContainer.appendChild(confetti);
-            // We must add the class *after* appending to ensure the animation triggers.
-            setTimeout(() => confetti.classList.add('animate'), 10);
+        } else if (winner === 2) {
+            this.dom.player2.name.textContent = 'AI Wins!';
+        } else {
+            this.dom.player2.name.textContent = "It's a Draw!";
         }
     }
 
@@ -205,57 +167,42 @@ class NineMensMorrisGame {
         this.gameOver = false;
         this.winningPositions = [];
         this.isAIThinking = false;
-        
-        document.getElementById('game-over-message').textContent = '';
         this.showAIThinking(false);
-        this.renderBoard();
-        this.updatePlayerLabels();
+        
+        // Update names based on game mode
+        if (this.gameMode === 'human') {
+            this.dom.player1.name.textContent = 'Player 1';
+            this.dom.player2.name.textContent = 'Player 2';
+        } else {
+            const diffName = this.gameMode.replace('ai-', '');
+            this.dom.player1.name.textContent = 'You';
+            this.dom.player2.name.textContent = `${diffName.charAt(0).toUpperCase() + diffName.slice(1)} AI`;
+        }
+        
         this.updateDisplay();
+        this.renderBoard();
+    }
+
+    launchConfetti() {
+        for (let i = 0; i < 50; i++) {
+            const c = document.createElement('div');
+            c.className = 'confetti animate';
+            c.style.background = `hsl(${Math.random() * 360}, 90%, 65%)`;
+            c.style.left = `${Math.random() * 100}vw`;
+            c.style.animationDuration = `${2 + Math.random() * 3}s`;
+            c.style.animationDelay = `${Math.random() * 0.2}s`;
+            c.addEventListener('animationend', () => c.remove());
+            this.dom.confettiContainer.appendChild(c);
+        }
     }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
     if (!window.AIPlayer) {
-        console.error("AIPlayer class not found. Ensure ai.js is loaded correctly before script.js.");
-        document.body.innerHTML = "<div style='color: white; font-family: sans-serif; padding: 30px;'><h1>Application Error</h1><p>A critical component (AIPlayer) failed to load. The application cannot start.</p></div>";
+        console.error("Critical Error: AIPlayer class not found.");
         return;
     }
-
     const game = new NineMensMorrisGame();
-
     game.setupDOMListeners();
-
-    document.getElementById('reset-button').addEventListener('click', () => {
-        game.reset();
-    });
-
-    document.querySelectorAll('.mode-button').forEach(button => {
-        button.addEventListener('click', () => {
-            const mode = button.dataset.mode;
-            game.setGameMode(mode);
-        });
-    });
-
-    const initialMode = document.querySelector('.mode-button.active').dataset.mode;
-    game.setGameMode(initialMode, true);
-    
-    const updateNotification = document.getElementById('update-notification');
-    const updateMessage = document.getElementById('update-message');
-    const downloadButton = document.getElementById('download-button');
-    const closeButton = document.getElementById('close-button');
-
-    if (window.ipcRenderer) {
-        window.ipcRenderer.on('update-info-available', (info) => {
-          updateMessage.innerText = `Version ${info.version} is available!`;
-          updateNotification.classList.remove('hidden');
-        });
-
-        downloadButton.addEventListener('click', () => {
-          window.ipcRenderer.send('open-download-page');
-        });
-
-        closeButton.addEventListener('click', () => {
-          updateNotification.classList.add('hidden');
-        });
-    }
+    game.setGameMode('ai-hard');
 });

@@ -14,8 +14,8 @@ let mainWindow;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 850,
+    width: 500,
+    height: 650,
     titleBarStyle: process.platform === 'darwin' ? 'hidden' : 'default',
     backgroundColor: '#2e3440',
     webPreferences: {
