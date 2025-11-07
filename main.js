@@ -1,6 +1,6 @@
 // main.js
 
-const { app, BrowserWindow, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, protocol } = require('electron');
 const path = require('path');
 const { autoUpdater } = require('electron-updater');
 const log = require('electron-log');
@@ -22,20 +22,40 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
       contextIsolation: true,
+      // *** NEW: Add this option for security with custom protocols ***
+      webSecurity: true 
     }
   });
 
-  mainWindow.loadFile('index.html');
+  mainWindow.loadURL('app://./index.html');
 
-  // After the window is ready, check for updates
   mainWindow.once('ready-to-show', () => {
-    // We DON'T use checkForUpdatesAndNotify().
-    // We will check and handle the notification UI ourselves.
     autoUpdater.checkForUpdates();
   });
 }
 
-app.whenReady().then(createWindow);
+// We must register the protocol BEFORE the app is ready.
+// *** NEW: Make the protocol handler more robust and add logging ***
+protocol.registerSchemesAsPrivileged([
+  { scheme: 'app', privileges: { secure: true, standard: true } }
+]);
+
+app.on('ready', () => {
+  protocol.registerFileProtocol('app', (request, callback) => {
+    // Sanitize the URL to prevent directory traversal attacks
+    const url = request.url.substr(6).replace(/\/$/, '');
+    const filePath = path.join(__dirname, url);
+    const normalizedPath = path.normalize(filePath);
+
+    // Log the request and the path we are trying to serve
+    log.info(`[Protocol] Requested URL: ${request.url}`);
+    log.info(`[Protocol] Resolved to path: ${normalizedPath}`);
+
+    callback({ path: normalizedPath });
+  });
+
+  createWindow();
+});
 
 app.on('activate', function () {
   if (BrowserWindow.getAllWindows().length === 0) createWindow();
@@ -45,13 +65,9 @@ app.on('window-all-closed', function () {
   if (process.platform !== 'darwin') app.quit();
 });
 
-
 // --- UPDATE EVENT LISTENERS ---
-
-// When an update is available, send the version info to the renderer process
 autoUpdater.on('update-available', (info) => {
   log.info('Update available.', info);
-  // Send version info to the renderer process
   mainWindow.webContents.send('update-info-available', info);
 });
 
@@ -59,9 +75,7 @@ autoUpdater.on('error', (err) => {
   log.error('Error in auto-updater. ' + err.toString());
 });
 
-// New: Listen for a message from the renderer to open the download link
 ipcMain.on('open-download-page', () => {
-  // Use the repository URL from your package.json to build the releases URL
   const releasesUrl = `https://github.com/Meaturious/modified-ninemensmorris/releases/latest`;
   shell.openExternal(releasesUrl);
 });

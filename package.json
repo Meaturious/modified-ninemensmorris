@@ -1,6 +1,6 @@
 {
   "name": "@meaturious/modified-ninemensmorris",
-  "version": "2.5.2",
+  "version": "2.6.0",
   "description": "A desktop version of the Nine Men's Morris game.",
   "main": "main.js",
   "scripts": {
@@ -35,7 +35,8 @@
       "index.html",
       "script.js",
       "style.css",
-      "preload.js"
+      "preload.js",
+      "ai.js" 
     ],
     "mac": {
       "target": "dmg",

@@ -2,6 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <!-- *** ADD THIS LINE *** -->
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' app:">
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nine Men's Morris</title>
     <!-- New: Added Google Fonts for a modern look -->
@@ -18,10 +21,8 @@
     </div>
     <header class="title-bar"></header>
 
-    <!-- New: Main layout container for the two-column design -->
     <div class="main-layout">
         
-        <!-- Game Panel (Left Side) -->
         <div class="game-panel">
             <div class="game-board">
                 <svg class="board-svg" viewBox="0 0 400 400">
@@ -65,11 +66,9 @@
             </div>
         </div>
 
-        <!-- Info & Controls Panel (Right Side) -->
         <div class="info-panel">
             <h1 class="game-title">Nine Men's Morris</h1>
             
-            <!-- New: Restructured player panels for a cleaner look -->
             <div class="players-container">
                 <div id="player1-panel" class="player-panel active">
                     <div class="player-header">
@@ -88,23 +87,23 @@
                 </div>
             </div>
 
-            <!-- New: Game status message area -->
             <div id="game-status" class="game-status"></div>
             <div id="game-over-message" class="game-over-message"></div>
 
             <div class="controls-group">
-                <button class="reset-button" onclick="resetGame()">New Game</button>
+                <button id="reset-button" class="reset-button">New Game</button>
                 <div class="game-mode-selector">
-                    <button class="mode-button" onclick="setGameMode('human')">vs Human</button>
-                    <button class="mode-button" onclick="setGameMode('ai-easy')">Easy</button>
-                    <button class="mode-button active" onclick="setGameMode('ai-medium')">Medium</button>
-                    <button class="mode-button" onclick="setGameMode('ai-hard')">Hard</button>
+                    <button class="mode-button" data-mode="human">vs Human</button>
+                    <button class="mode-button" data-mode="ai-easy">Easy</button>
+                    <button class="mode-button active" data-mode="ai-medium">Medium</button>
+                    <button class="mode-button" data-mode="ai-hard">Hard</button>
                 </div>
             </div>
         </div>
     </div>
     
     <div id="confetti-container"></div>
+    <script src="ai.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

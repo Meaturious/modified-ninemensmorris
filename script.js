@@ -1,144 +1,9 @@
-/**
- * AI Player with different difficulty levels
- */
-class AIPlayer {
-    constructor(difficulty = 'medium') {
-        this.difficulty = difficulty;
-        this.player = 2; // AI is always player 2
-    }
-
-    makeMove(game) {
-        switch (this.difficulty) {
-            case 'easy': return this.makeRandomMove(game);
-            case 'medium': return this.makeMediumMove(game);
-            case 'hard': return this.makeHardMove(game);
-            default: return this.makeMediumMove(game);
-        }
-    }
-
-    makeRandomMove(game) {
-        const emptyPositions = game.board.map((p, i) => p === null ? i : null).filter(p => p !== null);
-        if (emptyPositions.length === 0) return -1;
-        return emptyPositions[Math.floor(Math.random() * emptyPositions.length)];
-    }
-
-    makeMediumMove(game) {
-        const moves = [
-            this.findWinningMove(game, this.player), // 1. Win
-            this.findWinningMove(game, 1),           // 2. Block win
-            this.findSetupMove(game, this.player),   // 3. Setup mill
-            this.getStrategicMove(game),             // 4. Strategic move
-            this.makeRandomMove(game)                // 5. Fallback
-        ];
-        // Find the first valid move from the priority list
-        return moves.find(move => move !== -1 && move !== undefined);
-    }
-
-    makeHardMove(game) {
-        const moves = [
-            this.findWinningMove(game, this.player),
-            this.findWinningMove(game, 1),
-            this.findDoubleMill(game, this.player), // FIX: Corrected logic
-            this.findDoubleMill(game, 1),
-            this.findSetupMove(game, this.player),
-            this.getBestPositionalMove(game),       // FIX: Corrected logic
-            this.makeRandomMove(game)
-        ];
-        // Find the first valid move from the priority list
-        return moves.find(move => move !== -1 && move !== undefined);
-    }
-    
-    getStrategicMove(game) {
-        const centerPositions = [9, 11, 13, 15, 17, 19, 21, 23];
-        const availableCenters = centerPositions.filter(pos => game.board[pos] === null);
-        if (availableCenters.length > 0) {
-            return availableCenters[Math.floor(Math.random() * availableCenters.length)];
-        }
-        return -1;
-    }
-
-    findWinningMove(game, player) {
-        for (const pattern of game.millPatterns) {
-            const pieces = pattern.map(pos => game.board[pos]);
-            if (pieces.filter(p => p === player).length === 2 && pieces.includes(null)) {
-                return pattern[pieces.indexOf(null)];
-            }
-        }
-        return -1;
-    }
-
-    findSetupMove(game, player) {
-        for (const pattern of game.millPatterns) {
-            const pieces = pattern.map(pos => game.board[pos]);
-            if (pieces.filter(p => p === player).length === 1 && pieces.filter(p => p === null).length === 2) {
-                const emptyIndex = pieces.indexOf(null);
-                return pattern[emptyIndex];
-            }
-        }
-        return -1;
-    }
-
-    /**
-     * FIX: Corrected the logic for finding a double mill.
-     * It now correctly checks if placing a piece at 'move' would create two separate threats.
-     */
-    findDoubleMill(game, player) {
-        const emptyPositions = game.board.map((p, i) => (p === null ? i : null)).filter(p => p !== null);
-
-        for (const move of emptyPositions) {
-            let potentialThreatsFormed = 0;
-            const relevantPatterns = game.millPatterns.filter(p => p.includes(move));
-            
-            for (const pattern of relevantPatterns) {
-                const otherPositions = pattern.filter(p => p !== move);
-                const pos1 = otherPositions[0];
-                const pos2 = otherPositions[1];
-
-                if ((game.board[pos1] === player && game.board[pos2] === null) || 
-                    (game.board[pos2] === player && game.board[pos1] === null)) {
-                    potentialThreatsFormed++;
-                }
-            }
-
-            if (potentialThreatsFormed >= 2) {
-                return move;
-            }
-        }
-
-        return -1;
-    }
-
-    /**
-     * FIX: Corrected the logic for finding the best positional move.
-     * It now properly references `this.player` and has sounder logic.
-     */
-    getBestPositionalMove(game) {
-        const empty = game.board.map((p, i) => (p === null ? i : null)).filter(p => p !== null);
-        if (empty.length === 0) return -1;
-
-        let bestMove = -1;
-        let bestScore = -Infinity;
-        const opponent = this.player === 1 ? 2 : 1;
-
-        for (const pos of empty) {
-            let score = 0;
-            for (const pattern of game.millPatterns) {
-                if (pattern.includes(pos)) {
-                    if (!pattern.some(p => game.board[p] === opponent)) {
-                        score++;
-                    }
-                }
-            }
-            if (score > bestScore) {
-                bestScore = score;
-                bestMove = pos;
-            }
-        }
-        return bestMove;
-    }
-}
+// Get the AIPlayer class from the ai.js script
+const AIPlayer = window.AIPlayer;
 
 class NineMensMorrisGame {
+    // ... (The entire NineMensMorrisGame class remains unchanged) ...
+    // ... (constructor, setupDOMListeners, makeMove, etc. are all correct) ...
     constructor() {
         this.board = Array(24).fill(null);
         this.currentPlayer = 1;
@@ -146,6 +11,8 @@ class NineMensMorrisGame {
         this.gameOver = false;
         this.winningPositions = [];
         this.isAIThinking = false;
+        this.gameMode = 'ai-medium'; // A default value
+        this.ai = null;
         
         this.millPatterns = [
             [0, 1, 2], [2, 3, 4], [4, 5, 6], [6, 7, 0], [8, 9, 10], [10, 11, 12], 
@@ -154,18 +21,19 @@ class NineMensMorrisGame {
         ];
         
         this.confettiPool = [];
+        // This query will be delayed until the constructor is called from inside DOMContentLoaded
         this.confettiContainer = document.getElementById('confetti-container');
         
-        this.prepareConfetti();
-        this.initializeGame();
+        // Check if the container exists before preparing confetti
+        if (this.confettiContainer) {
+            this.prepareConfetti();
+        }
     }
 
-    initializeGame() {
+    setupDOMListeners() {
         document.querySelector('.game-board').addEventListener('click', (e) => {
             if (e.target.classList.contains('board-position')) this.handlePositionClick(e.target);
         });
-        const initialMode = document.querySelector('.mode-button.active').getAttribute('onclick').match(/'([^']+)'/)[1];
-        this.setGameMode(initialMode, true);
     }
     
     prepareConfetti() {
@@ -197,7 +65,7 @@ class NineMensMorrisGame {
 
     updateModeButtons() {
         document.querySelectorAll('.mode-button').forEach(btn => btn.classList.remove('active'));
-        const activeBtn = document.querySelector(`.mode-button[onclick="setGameMode('${this.gameMode}')"]`);
+        const activeBtn = document.querySelector(`.mode-button[data-mode='${this.gameMode}']`);
         if (activeBtn) activeBtn.classList.add('active');
     }
 
@@ -349,32 +217,54 @@ class NineMensMorrisGame {
     }
 }
 
-let game;
-document.addEventListener('DOMContentLoaded', () => { game = new NineMensMorrisGame(); });
-function resetGame() { if (game) game.reset(); }
-function setGameMode(mode) { if (game) game.setGameMode(mode); }
+// *** THE FIX: ALL executable code is now inside this listener ***
+document.addEventListener('DOMContentLoaded', () => {
+    // Safety check
+    if (!window.AIPlayer) {
+        console.error("AIPlayer class not found. Ensure ai.js is loaded correctly before script.js.");
+        document.body.innerHTML = "<div style='color: white; font-family: sans-serif; padding: 30px;'><h1>Application Error</h1><p>A critical component (AIPlayer) failed to load. The application cannot start.</p></div>";
+        return;
+    }
 
-// --- NEW: MANUAL UPDATE NOTIFICATION LOGIC ---
+    const game = new NineMensMorrisGame();
 
-// Get references to the new UI elements
-const updateNotification = document.getElementById('update-notification');
-const updateMessage = document.getElementById('update-message');
-const downloadButton = document.getElementById('download-button');
-const closeButton = document.getElementById('close-button');
+    // Setup game and control button listeners
+    game.setupDOMListeners();
 
-// Listen for the 'update-info-available' message from the main process
-window.ipcRenderer.on('update-info-available', (info) => {
-  // Update the message and show the notification
-  updateMessage.innerText = `Version ${info.version} is available!`;
-  updateNotification.classList.remove('hidden');
-});
+    document.getElementById('reset-button').addEventListener('click', () => {
+        game.reset();
+    });
 
-// When the download button is clicked, tell the main process to open the URL
-downloadButton.addEventListener('click', () => {
-  window.ipcRenderer.send('open-download-page');
-});
+    document.querySelectorAll('.mode-button').forEach(button => {
+        button.addEventListener('click', () => {
+            const mode = button.dataset.mode;
+            game.setGameMode(mode);
+        });
+    });
 
-// Allow the user to close the notification
-closeButton.addEventListener('click', () => {
-  updateNotification.classList.add('hidden');
+    // Initialize the game with the default mode
+    const initialMode = document.querySelector('.mode-button.active').dataset.mode;
+    game.setGameMode(initialMode, true);
+    
+    // --- UPDATE NOTIFICATION LOGIC (MOVED HERE) ---
+    const updateNotification = document.getElementById('update-notification');
+    const updateMessage = document.getElementById('update-message');
+    const downloadButton = document.getElementById('download-button');
+    const closeButton = document.getElementById('close-button');
+
+    // Make sure ipcRenderer is available before using it
+    if (window.ipcRenderer) {
+        window.ipcRenderer.on('update-info-available', (info) => {
+          updateMessage.innerText = `Version ${info.version} is available!`;
+          updateNotification.classList.remove('hidden');
+        });
+
+        downloadButton.addEventListener('click', () => {
+          window.ipcRenderer.send('open-download-page');
+        });
+
+        closeButton.addEventListener('click', () => {
+          updateNotification.classList.add('hidden');
+        });
+    }
 });
