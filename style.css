@@ -1,18 +1,36 @@
+/* START OF FILE style.css */
 :root {
     --bg-color: #000000;
-    --panel-color: #1e1e1e;
+    --panel-color: #272727;
     --text-color: #ffffff;
     --text-muted: #8e8e8e;
-    --player1-color: #9b59b6;
-    --player2-color: #27ae60;
+    --player1-color: #2107b4;
+    --player2-color: #c51414;
     --board-lines-color: #4a4a4a;
     --board-empty-piece-color: #3a3a3a;
-    --accent-color: #9b59b6;
+    --accent-color: #28408f;
     --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    --settings-bg: #1c1c1e;
+    --settings-row-bg: #2c2c2e;
+    --control-button-bg: #333;
+}
+
+/* --- Light Mode Theme --- */
+body.light-mode {
+    --bg-color: #f0f0f0;
+    --panel-color: #ffffff;
+    --text-color: #000000;
+    --text-muted: #6e6e6e;
+    --board-lines-color: #cccccc;
+    --board-empty-piece-color: #e0e0e0;
+    --settings-bg: #ffffff;
+    --settings-row-bg: #f2f2f7;
+    --control-button-bg: #e5e5e7;
 }
 
 html, body {
     margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden;
+    transition: background-color 0.3s, color 0.3s;
 }
 
 body {
@@ -31,20 +49,21 @@ body {
     height: 100%;
     width: 100%;
     max-width: 420px;
-    padding: 20px;
-    padding-top: 50px;
-    padding-bottom: 30px;
+    padding: 10px;
+    padding-top: 30px;
+    padding-bottom: 15px;
     box-sizing: border-box;
 }
 .game-board-container { flex-grow: 1; display: flex; align-items: center; }
 .game-board { width: 100%; aspect-ratio: 1 / 1; }
 .board-svg { width: 100%; height: 100%; }
-.board-lines > * { stroke: var(--board-lines-color); stroke-width: 4; fill: none; }
+.board-lines > * { stroke: var(--board-lines-color); stroke-width: 4; fill: none; transition: stroke 0.3s; }
 
 .piece {
     fill: var(--board-empty-piece-color);
     pointer-events: none;
-    transition: fill 0.2s ease;
+    transition: fill 0.2s, transform 0.2s;
+    transform-origin: center center;
 }
 
 .hitbox {
@@ -66,14 +85,31 @@ body {
 }
 @keyframes winner-glow { from { stroke-width: 4; } to { stroke-width: 8; } }
 
+/* --- Selected piece highlight --- */
+.piece.selected {
+    stroke: var(--accent-color);
+    stroke-width: 4;
+    stroke-dasharray: 8 4;
+    animation: selected-march 1s linear infinite;
+}
+@keyframes selected-march { from { stroke-dashoffset: 0; } to { stroke-dashoffset: 12; } }
+
+/* --- Removable piece highlight --- */
+.hitbox.removable ~ .piece {
+    animation: removable-pulse 1s infinite;
+}
+@keyframes removable-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+
+
 .player-panel {
     display: flex;
     align-items: center;
     gap: 15px;
     background-color: var(--panel-color);
-    border-radius: 25px;
-    padding: 12px 20px;
+    border-radius: 50px;
+    padding: 12px 11px;
     flex-shrink: 0;
+    transition: background-color 0.3s;
 }
 
 .player-avatar {
@@ -85,6 +121,7 @@ body {
     align-items: center;
     font-size: 24px;
     font-weight: bold;
+    color: #ffffff; /* **FIXED**: Avatar text is now always white */
 }
 .ai-avatar { background-color: var(--player2-color); }
 .your-avatar { background-color: var(--player1-color); }
@@ -105,7 +142,7 @@ body {
     width: 44px;
     height: 44px;
     border-radius: 50%;
-    background-color: #333;
+    background-color: var(--control-button-bg); /* **FIXED**: Uses CSS variable */
     color: var(--text-muted);
     border: none;
     cursor: pointer;
@@ -119,31 +156,102 @@ body {
 
 /* --- SETTINGS MODAL --- */
 .modal-overlay {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0, 0, 0, 0.7);
-    display: flex; justify-content: center; align-items: center;
-    z-index: 1000; backdrop-filter: blur(5px);
-    opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: flex-end; /* Align to the bottom */
+    z-index: 1000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
 }
-.modal-overlay:not(.hidden) { opacity: 1; pointer-events: auto; }
+
+.modal-overlay:not(.hidden) {
+    opacity: 1;
+    pointer-events: auto;
+}
+
 .settings-panel {
-    background-color: var(--panel-color);
-    padding: 30px 40px; border-radius: 20px;
-    text-align: center; width: 90%; max-width: 350px;
-    border: 1px solid #333;
+    background-color: var(--settings-bg);
+    padding: 15px;
+    border-radius: 20px 20px 0 0; /* Rounded corners only on top */
+    width: 100%;
+    max-width: 420px;
+    box-sizing: border-box;
+    transform: translateY(100%);
+    transition: transform 0.3s ease-out, background-color 0.3s;
 }
-.settings-panel h2 { margin-top: 0; }
-.settings-options { display: flex; flex-direction: column; gap: 15px; margin: 30px 0; }
-.mode-button {
-    background-color: #333; color: var(--text-color); border: none;
-    padding: 15px; font-size: 1rem; font-weight: 600;
-    border-radius: 10px; cursor: pointer; transition: background-color 0.2s;
+
+.modal-overlay:not(.hidden) .settings-panel {
+    transform: translateY(0);
 }
-.mode-button:hover { background-color: #444; }
-.mode-button.active { background-color: var(--accent-color); }
+
+.settings-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.settings-header h2 {
+    margin: 0;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
 .close-button {
-    background: none; border: 1px solid #444; color: var(--text-muted);
-    padding: 10px 20px; border-radius: 8px; cursor: pointer; margin-top: 10px;
+    background: var(--settings-row-bg);
+    border: none;
+    color: var(--text-muted);
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.settings-options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.setting-row {
+    background-color: var(--settings-row-bg);
+    color: var(--text-color);
+    border: none;
+    padding: 12px 18px;
+    font-size: 1rem;
+    font-weight: 500;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.setting-row:hover {
+    background-color: #3a3a3c;
+}
+
+body.light-mode .setting-row:hover {
+    background-color: #e9e9ed;
+}
+
+.setting-value {
+    color: var(--text-muted);
+    font-weight: 400;
 }
 
 /* --- CONFETTI --- */

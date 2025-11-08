@@ -1,53 +1,161 @@
-/**
- * AI Player with different difficulty levels
- */
+// START OF FILE ai.js (Corrected and Finalized)
 window.AIPlayer = class AIPlayer {
     constructor(difficulty = 'medium') {
         this.difficulty = difficulty;
         this.player = 2; // AI is always player 2
     }
 
+    // *** SINGLE, UNIFIED ENTRY POINT FOR THE AI ***
     makeMove(game) {
+        if (game.settings.gameMode === 'simple') {
+            const position = this.runSimpleLogic(game);
+            return { to: position };
+        } else {
+            return this.runClassicLogic(game);
+        }
+    }
+
+    // --- SIMPLE MODE LOGIC ---
+    runSimpleLogic(game) {
         switch (this.difficulty) {
             case 'easy':
                 return this.makeRandomMove(game);
             case 'medium':
                 return this.makeMediumMove(game);
             case 'hard':
-                return this.makeHardMove(game);
+                const simulationGame = { board: [...game.board], millPatterns: game.millPatterns };
+                const result = this.minimaxSimple(simulationGame, 4, -Infinity, Infinity, true);
+                return result.move !== -1 ? result.move : this.makeRandomMove(game);
             default:
                 return this.makeMediumMove(game);
         }
     }
 
-    // --- EASY AND MEDIUM AI LOGIC (Unchanged) ---
-
     makeRandomMove(game) {
-        const emptyPositions = game.board.map((p, i) => p === null ? i : null).filter(p => p !== null);
+        const emptyPositions = game.board.map((p, i) => (p === null ? i : null)).filter(p => p !== null);
         if (emptyPositions.length === 0) return -1;
         return emptyPositions[Math.floor(Math.random() * emptyPositions.length)];
     }
 
     makeMediumMove(game) {
         const moves = [
-            this.findWinningMove(game, this.player), // 1. Win
-            this.findWinningMove(game, 1),           // 2. Block win
-            this.findSetupMove(game, this.player),   // 3. Setup mill
-            this.getStrategicMove(game),             // 4. Strategic move
-            this.makeRandomMove(game)                // 5. Fallback
+            this.findWinningMove(game, this.player),
+            this.findWinningMove(game, 1), // Block opponent
+            this.findSetupMove(game, this.player),
+            this.makeRandomMove(game)
         ];
         return moves.find(move => move !== -1 && move !== undefined);
     }
     
-    getStrategicMove(game) {
-        const centerPositions = [9, 11, 13, 15, 17, 19, 21, 23];
-        const availableCenters = centerPositions.filter(pos => game.board[pos] === null);
-        if (availableCenters.length > 0) {
-            return availableCenters[Math.floor(Math.random() * availableCenters.length)];
+    minimaxSimple(game, depth, alpha, beta, isMaximizing) {
+        const winner = this.checkSimpleWinner(game);
+        if (winner !== null) return { move: null, score: winner === this.player ? 100 : -100 };
+        if (depth === 0) return { move: null, score: 0 };
+        const emptyPositions = game.board.map((p, i) => (p === null ? i : null)).filter(p => p !== null);
+        if (emptyPositions.length === 0) return { move: null, score: 0 };
+        let bestMove = -1;
+        if (isMaximizing) {
+            let maxEval = -Infinity;
+            for (const move of emptyPositions) {
+                game.board[move] = this.player;
+                let evalScore = this.minimaxSimple(game, depth - 1, alpha, beta, false).score;
+                game.board[move] = null;
+                if (evalScore > maxEval) { maxEval = evalScore; bestMove = move; }
+                alpha = Math.max(alpha, evalScore);
+                if (beta <= alpha) break;
+            }
+            return { move: bestMove, score: maxEval };
+        } else {
+            let minEval = Infinity;
+            for (const move of emptyPositions) {
+                game.board[move] = 1;
+                let evalScore = this.minimaxSimple(game, depth - 1, alpha, beta, true).score;
+                game.board[move] = null;
+                if (evalScore < minEval) { minEval = evalScore; bestMove = move; }
+                beta = Math.min(beta, evalScore);
+                if (beta <= alpha) break;
+            }
+            return { move: bestMove, score: minEval };
         }
-        return -1;
     }
 
+    checkSimpleWinner(game) {
+        for (const pattern of game.millPatterns) {
+            const p1 = game.board[pattern[0]];
+            if (p1 !== null && p1 === game.board[pattern[1]] && p1 === game.board[pattern[2]]) {
+                return p1;
+            }
+        }
+        return null;
+    }
+
+    // --- ADVANCED CLASSIC MODE LOGIC (Greedy Algorithm) ---
+    runClassicLogic(game) {
+        const opponent = 1;
+        const allMyMoves = this.generateAllMoves(game, this.player);
+        if (allMyMoves.length === 0) return { to: null };
+
+        // Priority 1: WIN - Find a move that creates a mill for me.
+        const millMoves = allMyMoves.filter(m => m.createsMill);
+        if (millMoves.length > 0) {
+            const move = millMoves[0];
+            move.remove = this.choosePieceToRemove(game, opponent, move.board);
+            return move;
+        }
+
+        // Priority 2: BLOCK - Find and block an opponent's winning move.
+        const opponentWinningMove = this.findWinningMove(game, opponent);
+        if (opponentWinningMove !== -1) {
+            const blockingMove = allMyMoves.find(myMove => myMove.to === opponentWinningMove);
+            if (blockingMove) {
+                return blockingMove;
+            }
+        }
+        
+        // Priority 3: SETUP - Find a move that creates a 2-in-a-row for me.
+        const setupMoves = allMyMoves.filter(move => this.createsSetup(move, this.player, game.millPatterns));
+        if (setupMoves.length > 0) {
+            return setupMoves[Math.floor(Math.random() * setupMoves.length)];
+        }
+
+        // Priority 4: BLOCK SETUP - Block an opponent's attempt to create a 2-in-a-row.
+        const allOpponentMoves = this.generateAllMoves(game, opponent);
+        const opponentSetupMove = allOpponentMoves.find(move => this.createsSetup(move, opponent, game.millPatterns));
+        if (opponentSetupMove) {
+            const blockingMove = allMyMoves.find(myMove => myMove.to === opponentSetupMove.to);
+            if (blockingMove) {
+                return blockingMove;
+            }
+        }
+
+        // Priority 5: Make a random valid move as a last resort.
+        return allMyMoves[Math.floor(Math.random() * allMyMoves.length)];
+    }
+    
+    // --- AI HELPER FUNCTIONS ---
+    
+    createsSetup(move, player, millPatterns) {
+        return millPatterns.some(pattern => {
+            if (!pattern.includes(move.to)) return false;
+            const pieces = pattern.map(p => move.board[p]);
+            return pieces.filter(p => p === player).length === 2 && pieces.filter(p => p === null).length === 1;
+        });
+    }
+
+    choosePieceToRemove(game, opponent, boardState) {
+        const removablePieces = this.getRemovablePieces(game, opponent, boardState);
+        if (removablePieces.length === 0) return null;
+
+        for (const piece of removablePieces) {
+            const tempBoard = [...boardState];
+            tempBoard[piece] = null;
+            if (this.findWinningMove({ ...game, board: tempBoard }, opponent) === -1) {
+                return piece;
+            }
+        }
+        return removablePieces[0];
+    }
+    
     findWinningMove(game, player) {
         for (const pattern of game.millPatterns) {
             const pieces = pattern.map(pos => game.board[pos]);
@@ -57,145 +165,56 @@ window.AIPlayer = class AIPlayer {
         }
         return -1;
     }
-
+    
     findSetupMove(game, player) {
         for (const pattern of game.millPatterns) {
             const pieces = pattern.map(pos => game.board[pos]);
             if (pieces.filter(p => p === player).length === 1 && pieces.filter(p => p === null).length === 2) {
-                const emptyIndex = pieces.indexOf(null);
-                return pattern[emptyIndex];
+                return pattern[pieces.indexOf(null)];
             }
         }
         return -1;
     }
 
-    // --- HARD AI - MINIMAX ALGORITHM ---
+    generateAllMoves(game, player) {
+        let moves = [];
+        const board = game.board;
+        // *** CRITICAL FIX ***: The `game.piecesLeft` object is a dictionary { 1: count, 2: count }, not a zero-indexed array.
+        const gamePhase = (game.piecesLeft[player] > 0) ? 'placing' : (game.piecesOnBoard[player] === 3 ? 'flying' : 'moving');
 
-    makeHardMove(game) {
-        const winningMove = this.findWinningMove(game, this.player);
-        if (winningMove !== -1) {
-            return winningMove;
-        }
-
-        const opponent = 1;
-        const blockingMove = this.findWinningMove(game, opponent);
-        if (blockingMove !== -1) {
-            return blockingMove;
-        }
-        
-        const depth = 4; 
-        // We create one clone here to pass to the simulation, so the main game state is untouched.
-        const simulationGame = this.cloneGame(game);
-        const bestMoveResult = this.findBestMoveMinimax(simulationGame, depth);
-
-        return bestMoveResult.move !== -1 ? bestMoveResult.move : this.makeRandomMove(game);
-    }
-
-    findBestMoveMinimax(game, depth) {
-        let bestScore = -Infinity;
-        let bestMove = -1;
-        const emptyPositions = game.board.map((p, i) => (p === null ? i : null)).filter(p => p !== null);
-
-        for (const move of emptyPositions) {
-            // OPTIMIZATION: Mutate the board, evaluate, then undo the move. No cloning in the loop.
-            game.board[move] = this.player;
-            const score = this.minimax(game, depth - 1, -Infinity, Infinity, false);
-            game.board[move] = null; // Undo the move
-
-            if (score > bestScore) {
-                bestScore = score;
-                bestMove = move;
+        if (gamePhase === 'placing') {
+            for (let i = 0; i < board.length; i++) {
+                if (board[i] === null) {
+                    const tempBoard = [...board];
+                    tempBoard[i] = player;
+                    moves.push({ from: undefined, to: i, remove: null, createsMill: this.isPositionInMill(i, player, tempBoard, game.millPatterns), board: tempBoard });
+                }
             }
-        }
-        
-        return { move: bestMove, score: bestScore };
-    }
-
-    minimax(game, depth, alpha, beta, isMaximizing) {
-        const score = this.evaluateBoard(game);
-        
-        if (Math.abs(score) > 5000 || depth === 0) {
-            return score;
-        }
-
-        const emptyPositions = game.board.map((p, i) => (p === null ? i : null)).filter(p => p !== null);
-        if (emptyPositions.length === 0) return 0;
-
-        if (isMaximizing) {
-            let maxEval = -Infinity;
-            for (const move of emptyPositions) {
-                // OPTIMIZATION: Make move on the board directly.
-                game.board[move] = this.player;
-                const evaluationResult = this.minimax(game, depth - 1, alpha, beta, false);
-                // OPTIMIZATION: Undo the move to revert state for the next iteration.
-                game.board[move] = null;
-                
-                maxEval = Math.max(maxEval, evaluationResult);
-                alpha = Math.max(alpha, evaluationResult);
-                if (beta <= alpha) break;
-            }
-            return maxEval;
         } else {
-            let minEval = Infinity;
-            for (const move of emptyPositions) {
-                // OPTIMIZATION: Make move for the opponent.
-                game.board[move] = 1;
-                const evaluationResult = this.minimax(game, depth - 1, alpha, beta, true);
-                // OPTIMIZATION: Undo the move.
-                game.board[move] = null;
-
-                minEval = Math.min(minEval, evaluationResult);
-                beta = Math.min(beta, evaluationResult);
-                if (beta <= alpha) break;
-            }
-            return minEval;
-        }
-    }
-    
-    evaluateBoard(game) {
-        let score = 0;
-        const opponent = 1;
-
-        for (const pattern of game.millPatterns) {
-            if (pattern.every(pos => game.board[pos] === this.player)) return 10000;
-            if (pattern.every(pos => game.board[pos] === opponent)) return -10000;
-        }
-
-        score += this.countThreats(game, this.player) * 100;
-        score -= this.countThreats(game, opponent) * 120;
-
-        score += this.positionalScore(game, this.player);
-        score -= this.positionalScore(game, opponent);
-
-        return score;
-    }
-
-    countThreats(game, player) {
-        let threats = 0;
-        for (const pattern of game.millPatterns) {
-            const pieces = pattern.map(pos => game.board[pos]);
-            if (pieces.filter(p => p === player).length === 2 && pieces.includes(null)) {
-                threats++;
+            const playerPieces = [...board.keys()].filter(i => board[i] === player);
+            const isFlying = gamePhase === 'flying';
+            for (const from of playerPieces) {
+                const destinations = isFlying ? [...board.keys()].filter(i => board[i] === null) : game.adjacencyMap[from].filter(i => board[i] === null);
+                for (const to of destinations) {
+                    const tempBoard = [...board];
+                    tempBoard[to] = player;
+                    tempBoard[from] = null;
+                    moves.push({ from: from, to: to, remove: null, createsMill: this.isPositionInMill(to, player, tempBoard, game.millPatterns), board: tempBoard });
+                }
             }
         }
-        return threats;
-    }
-    
-    positionalScore(game, player) {
-        let score = 0;
-        const opponent = player === 1 ? 2 : 1;
-        for (const pattern of game.millPatterns) {
-            if (!pattern.some(p => game.board[p] === opponent)) {
-                score += pattern.filter(p => game.board[p] === player).length;
-            }
-        }
-        return score;
+        return moves;
     }
 
-    cloneGame(game) {
-        return {
-            board: [...game.board],
-            millPatterns: game.millPatterns
-        };
+    getRemovablePieces(game, player, boardState) {
+        const board = boardState || game.board;
+        const allPieces = [...board.keys()].filter(i => board[i] === player);
+        const nonMillPieces = allPieces.filter(p => !this.isPositionInMill(p, player, board, game.millPatterns));
+        return nonMillPieces.length > 0 ? nonMillPieces : allPieces;
     }
-}
+
+    isPositionInMill(position, player, board, millPatterns) {
+        if (position === null || player === null) return false;
+        return millPatterns.some(pattern => pattern.includes(position) && pattern.every(p => board[p] === player));
+    }
+};
