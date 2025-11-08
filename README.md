@@ -2,7 +2,7 @@
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/suspiciousstew67/ninemensmorris/cbd4e50142712af1234a6806cd71cd4ecbcffdd0/iphone.png" width="250" title="Mobile Version">
-  <img src="https://raw.githubusercontent.com/suspiciousstew67/ninemensmorris/cbd4e50142712af1234a6806cd71cd4ecbcffdd0/iphone.png" width="250" title="Desktop Version">
+  <img src="https://github.com/suspiciousstew67/ninemensmorris/blob/main/mac.png?raw=true" width="350" title="Desktop Version">
 </p>
 
 Nine Men's Morris for web, Mac and Windows.
