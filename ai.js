@@ -1,11 +1,10 @@
-// START OF FILE ai.js (Corrected and Finalized)
+// START OF FINAL AI.JS
 window.AIPlayer = class AIPlayer {
     constructor(difficulty = 'medium') {
         this.difficulty = difficulty;
         this.player = 2; // AI is always player 2
     }
 
-    // *** SINGLE, UNIFIED ENTRY POINT FOR THE AI ***
     makeMove(game) {
         if (game.settings.gameMode === 'simple') {
             const position = this.runSimpleLogic(game);
@@ -15,36 +14,35 @@ window.AIPlayer = class AIPlayer {
         }
     }
 
-    // --- SIMPLE MODE LOGIC ---
     runSimpleLogic(game) {
         switch (this.difficulty) {
             case 'easy':
                 return this.makeRandomMove(game);
             case 'medium':
-                return this.makeMediumMove(game);
+                return this.makeSimpleMediumMove(game);
             case 'hard':
                 const simulationGame = { board: [...game.board], millPatterns: game.millPatterns };
                 const result = this.minimaxSimple(simulationGame, 4, -Infinity, Infinity, true);
                 return result.move !== -1 ? result.move : this.makeRandomMove(game);
             default:
-                return this.makeMediumMove(game);
+                return this.makeSimpleMediumMove(game);
         }
+    }
+
+    makeSimpleMediumMove(game) {
+        const winningMove = this.findWinningMove(game, this.player);
+        if (winningMove !== -1) return winningMove;
+
+        const blockingMove = this.findWinningMove(game, 1);
+        if (blockingMove !== -1) return blockingMove;
+
+        return this.makeRandomMove(game);
     }
 
     makeRandomMove(game) {
         const emptyPositions = game.board.map((p, i) => (p === null ? i : null)).filter(p => p !== null);
         if (emptyPositions.length === 0) return -1;
         return emptyPositions[Math.floor(Math.random() * emptyPositions.length)];
-    }
-
-    makeMediumMove(game) {
-        const moves = [
-            this.findWinningMove(game, this.player),
-            this.findWinningMove(game, 1), // Block opponent
-            this.findSetupMove(game, this.player),
-            this.makeRandomMove(game)
-        ];
-        return moves.find(move => move !== -1 && move !== undefined);
     }
     
     minimaxSimple(game, depth, alpha, beta, isMaximizing) {
@@ -89,13 +87,11 @@ window.AIPlayer = class AIPlayer {
         return null;
     }
 
-    // --- ADVANCED CLASSIC MODE LOGIC (Greedy Algorithm) ---
     runClassicLogic(game) {
         const opponent = 1;
         const allMyMoves = this.generateAllMoves(game, this.player);
-        if (allMyMoves.length === 0) return { to: null };
+        if (allMyMoves.length === 0) return { from: null, to: null, remove: null };
 
-        // Priority 1: WIN - Find a move that creates a mill for me.
         const millMoves = allMyMoves.filter(m => m.createsMill);
         if (millMoves.length > 0) {
             const move = millMoves[0];
@@ -103,36 +99,24 @@ window.AIPlayer = class AIPlayer {
             return move;
         }
 
-        // Priority 2: BLOCK - Find and block an opponent's winning move.
         const opponentWinningMove = this.findWinningMove(game, opponent);
         if (opponentWinningMove !== -1) {
             const blockingMove = allMyMoves.find(myMove => myMove.to === opponentWinningMove);
-            if (blockingMove) {
-                return blockingMove;
-            }
+            if (blockingMove) return blockingMove;
         }
         
-        // Priority 3: SETUP - Find a move that creates a 2-in-a-row for me.
         const setupMoves = allMyMoves.filter(move => this.createsSetup(move, this.player, game.millPatterns));
-        if (setupMoves.length > 0) {
-            return setupMoves[Math.floor(Math.random() * setupMoves.length)];
-        }
+        if (setupMoves.length > 0) return setupMoves[Math.floor(Math.random() * setupMoves.length)];
 
-        // Priority 4: BLOCK SETUP - Block an opponent's attempt to create a 2-in-a-row.
         const allOpponentMoves = this.generateAllMoves(game, opponent);
         const opponentSetupMove = allOpponentMoves.find(move => this.createsSetup(move, opponent, game.millPatterns));
         if (opponentSetupMove) {
             const blockingMove = allMyMoves.find(myMove => myMove.to === opponentSetupMove.to);
-            if (blockingMove) {
-                return blockingMove;
-            }
+            if (blockingMove) return blockingMove;
         }
 
-        // Priority 5: Make a random valid move as a last resort.
         return allMyMoves[Math.floor(Math.random() * allMyMoves.length)];
     }
-    
-    // --- AI HELPER FUNCTIONS ---
     
     createsSetup(move, player, millPatterns) {
         return millPatterns.some(pattern => {
@@ -145,14 +129,6 @@ window.AIPlayer = class AIPlayer {
     choosePieceToRemove(game, opponent, boardState) {
         const removablePieces = this.getRemovablePieces(game, opponent, boardState);
         if (removablePieces.length === 0) return null;
-
-        for (const piece of removablePieces) {
-            const tempBoard = [...boardState];
-            tempBoard[piece] = null;
-            if (this.findWinningMove({ ...game, board: tempBoard }, opponent) === -1) {
-                return piece;
-            }
-        }
         return removablePieces[0];
     }
     
@@ -165,21 +141,10 @@ window.AIPlayer = class AIPlayer {
         }
         return -1;
     }
-    
-    findSetupMove(game, player) {
-        for (const pattern of game.millPatterns) {
-            const pieces = pattern.map(pos => game.board[pos]);
-            if (pieces.filter(p => p === player).length === 1 && pieces.filter(p => p === null).length === 2) {
-                return pattern[pieces.indexOf(null)];
-            }
-        }
-        return -1;
-    }
 
     generateAllMoves(game, player) {
         let moves = [];
         const board = game.board;
-        // *** CRITICAL FIX ***: The `game.piecesLeft` object is a dictionary { 1: count, 2: count }, not a zero-indexed array.
         const gamePhase = (game.piecesLeft[player] > 0) ? 'placing' : (game.piecesOnBoard[player] === 3 ? 'flying' : 'moving');
 
         if (gamePhase === 'placing') {
@@ -187,7 +152,7 @@ window.AIPlayer = class AIPlayer {
                 if (board[i] === null) {
                     const tempBoard = [...board];
                     tempBoard[i] = player;
-                    moves.push({ from: undefined, to: i, remove: null, createsMill: this.isPositionInMill(i, player, tempBoard, game.millPatterns), board: tempBoard });
+                    moves.push({ from: null, to: i, remove: null, createsMill: this.isPositionInMill(i, player, tempBoard, game.millPatterns), board: tempBoard });
                 }
             }
         } else {

@@ -1,6 +1,6 @@
 {
   "name": "@suspiciousstew67/nine-mens-morris",
-  "version": "2.8.1",
+  "version": "3.0.0",
   "description": "A desktop version of the Nine Men's Morris game.",
   "main": "main.js",
   "scripts": {
@@ -10,33 +10,33 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/Meaturious/modified-ninemensmorris.git"
+    "url": "https://github.com/suspiciousstew67/ninemensmorris.git"
   },
-  "author": "Meaturious",
+  "author": "suspiciousstew67",
   "license": "ISC",
   "dependencies": {
     "electron-log": "^5.0.0",
-    "electron-updater": "^6.1.1"
+    "electron-updater": "^6.1.1",
+    "ws": "^8.12.0"
   },
   "devDependencies": {
     "electron": "^25.0.0",
     "electron-builder": "^24.6.4"
   },
   "build": {
-    "appId": "com.meaturious.ninemensmorris",
+    "appId": "com.suspiciousstew67.ninemensmorris",
     "productName": "Nine Men's Morris",
     "publish": {
         "provider": "github",
         "releaseType": "release"
       },
-
     "files": [
       "main.js",
       "index.html",
       "script.js",
       "style.css",
       "preload.js",
-      "ai.js" 
+      "ai.js"
     ],
     "mac": {
       "target": "dmg",
