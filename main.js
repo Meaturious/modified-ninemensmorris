@@ -29,7 +29,7 @@ function createWindow() {
   });
 
   // Load the index.html file directly from the filesystem. This is the most reliable method.
-  mainWindow.loadFile(path.join(__dirname, 'www/index.html'));
+  mainWindow.loadFile(path.join(__dirname, 'index.html'));
 
   mainWindow.once('ready-to-show', () => {
     autoUpdater.checkForUpdates();
