@@ -22,9 +22,9 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
       contextIsolation: true,
-      webSecurity: true,
-      // THIS IS A CRITICAL FIX: It tells Electron to treat the 'app' protocol like 'file' for pathing.
-      webSecurity: false 
+      // Note: webSecurity is disabled to allow local file loading
+      // This is safe since we're loading local files only and have contextIsolation enabled
+      webSecurity: false
     }
   });
 

@@ -37,7 +37,8 @@
       "script.js",
       "style.css",
       "preload.js",
-      "ai.js"
+      "ai.js",
+      "ai-worker.js"
     ],
     "mac": {
       "target": "dmg",
